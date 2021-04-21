@@ -1,0 +1,27 @@
+{
+     "redditSkip": "false",
+     "instaSkip": "false",
+     "agentName": "your agent name",
+     "clientID": "your client id",
+     "clientSecret": "your client secret",
+     "destination":"the root path to download to",
+     "loggingLevel":1,
+     "scrapeList": [
+          "u/username",
+          "r/subredditname"
+     ],
+     "imageDomains": [
+          "i.redd.it",
+          "i.imgur.com"
+     ],
+     "gifDomains":[
+          "gfycat.com"
+     ],
+     "videoDomains":[
+          "v.redd.it",
+          "gfycat.com"
+     ],
+     "instalist":[
+          "instagram username"
+     ]
+}
