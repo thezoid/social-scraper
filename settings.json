@@ -6,10 +6,6 @@
      "clientSecret": "your client secret",
      "destination":"the root path to download to",
      "loggingLevel":1,
-     "scrapeList": [
-          "u/username",
-          "r/subredditname"
-     ],
      "imageDomains": [
           "i.redd.it",
           "i.imgur.com"
@@ -20,6 +16,10 @@
      "videoDomains":[
           "v.redd.it",
           "gfycat.com"
+     ],
+     "scrapeList": [
+          "u/username",
+          "r/subredditname"
      ],
      "instalist":[
           "instagram username"
