@@ -400,7 +400,7 @@ for profile in instaList:
           writeLog(message=m, type="ERROR")
 
 endTime = datetime.datetime.now()
-print("\033[1;32;40mDownloaded:",str(captured),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
+print("\033[1;32;40mDownloaded:",str(captured),"\nRedditors:",str(len(userList)),"\nSubreddits:",str(len(subList)),"\nInsta Accounts:",str(len(instaList)),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
 if loggingLevel >=2:
      print("Warnings:",str(warnings))
 if loggingLevel >=1:
