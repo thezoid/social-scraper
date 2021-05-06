@@ -1,4 +1,5 @@
 from logging import warn
+import math
 import requests
 import wget
 import shutil
@@ -498,16 +499,18 @@ if not twitSkip:
                     writeLog(message=m,type="WARNING")
                     continue
                try:
-                    writeLog(f"[{user}] Attempting to download {mediaFile}","INFO")
+                    writeLog(f"\n[{user}] Attempting to download {mediaFile}","INFO")
                     wget.download(mediaFile,out=filename)
                     captured+=1
                except:
-                    writeLog(f"Failed to download {mediaFile}","ERROR")
+                    writeLog(f"\nFailed to download {mediaFile}","ERROR")
 
-endTime = datetime.datetime.now()
-print("\033[1;32;40mDownloaded:",str(captured),"\nRedditors:",str(len(userList)),"\nSubreddits:",str(len(subList)),"\nInsta Accounts:",str(len(instaList)),"\nTwitter Accounts:",str(len(twitUserList)),"\nTweets seen",str(tweetsSeen),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
+print() #try to fix weird same line issue with wget output
+
+m=("\033[1;32;40mDownloaded: "+str(captured)+"\nRedditors: "+str(len(userList))+"\nSubreddits: "+str(len(subList))+"\nInsta Accounts: "+str(len(instaList))+"\nTwitter Accounts: "+str(len(twitUserList))+"\nTweets seen: "+str(tweetsSeen)+"\nDuration: "+str(datetime.timedelta(seconds=math.floor((datetime.datetime.now() - startTime).total_seconds()))))
 if loggingLevel >=2:
-     print("Warnings:",str(warnings))
+     m+="\nWarnings:"+str(warnings)
 if loggingLevel >=1:
-     print("Errors:",str(errors))
-print(bcolors.ENDC)
+     m+="\nErrors:"+str(errors)
+m+=bcolors.ENDC
+writeLog(m,"INFO")
