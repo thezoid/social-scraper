@@ -277,9 +277,16 @@ if not redditorSkip:
                if submission.domain in videoDomains:
                     m="getting ["+user.name+"] "+submission.title+" "+submission.url
                     writeLog(message=m,type="INFO")
+                    filename = submission.url.split("/")[-1]
+                    filename = filename.replace("?","")
+                    filename = userpath+str(subcount)+"-"+user.name+"-"+filename
+                    if  os.path.exists(filename):
+                         m="File already exists -"+filename
+                         writeLog(message=m,type="WARNING")
+                         continue
                     ydl_opts = {
-                         'formate':'best',
-                         'outtmpl': userpath+str(subcount)+"-"+user.name+"-"+"%(title)s.%(ext)s",
+                         'format':'best',
+                         'outtmpl': filename,
                          'cachedir': False,
                          'force_generic_extractor': (submission.domain in videoDomains or submission.domain in gifDomains),
                          'quiet':(loggingLevel <= 2),
@@ -366,9 +373,16 @@ if not subredSkip:
                if submission["domain"] in videoDomains:
                     m="getting ["+subname+"] "+submission["title"]+" "+url
                     writeLog(message=m,type="INFO")
+                    filename = url.split("/")[-1]
+                    filename = filename.replace("?","")
+                    filename = subpath+str(subcount)+"-"+subname+"-"+filename
+                    if  os.path.exists(filename):
+                         m="File already exists -"+filename
+                         writeLog(message=m,type="WARNING")
+                         continue
                     ydl_opts = {
-                         'formate':'best',
-                         'outtmpl': subpath+str(subcount)+"-"+subname+"-"+"%(title)s.%(ext)s",
+                         'format':'best',
+                         'outtmpl': filename,
                          'cachedir': False,
                          'force_generic_extractor': (submission["domain"] in videoDomains or submission["domain"] in gifDomains),
                          'quiet':(loggingLevel <= 2),
