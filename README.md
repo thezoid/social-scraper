@@ -9,6 +9,7 @@ DISCLAIMER: This project is to be used only for archival purposes.
  Requires instaloader, youtube_dl, and praw. praw erquires additional setup; h/e youtube_dl and instaloader work OOTB.
 
  [How to register app for praw](https://praw.readthedocs.io/en/latest/getting_started/authentication.html#installed-application)
+ [Twitter needs a dev app registered](https://developer.twitter.com)
 
 
 ```python
