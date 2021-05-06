@@ -139,11 +139,11 @@ def getSubredditGallery(filename):
 def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList,_twitList,_twitterUsersList):
      for item in _scrapeList:
           if item.split("/")[0] == 'r' and not item.split("/")[1] in _subList:
-               m="processing new sub: "+item
+               m="[Subreddit] processing new sub: "+item
                writeLog(message=m,type="INFO")
                _subList.append(item.split("/")[1])
           elif item.split("/")[0] == 'u' and not item.split("/")[1] in _userList:
-               m="processing new user: "+item
+               m="[Redditor] processing new user: "+item
                writeLog(message=m,type="INFO")
                _userList.append(item.split("/")[1])
           elif item.split("/")[1] in _userList or item.split("/")[1] in _subList:
@@ -154,11 +154,15 @@ def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccount
           if item in _instaAccountList:
                writeLog("duplicate item provided "+item,type="WARNING")
                continue
+          m="[Instagram] processing new user: "+item
+          writeLog(message=m,type="INFO")
           _instaAccountList.append(item)
      for item in _twitList:
           if item in _twitterUsersList:
                writeLog("duplicate item provided "+item,type="WARNING")
                continue
+          m="[Twitter] processing new user: "+item
+          writeLog(message=m,type="INFO")
           _twitterUsersList.append(item)
      _userList.sort()
      _subList.sort()
@@ -480,7 +484,7 @@ if not twitSkip:
                     writeLog(message=m,type="WARNING")
                     continue
                try:
-                    writeLog(f"Attempting to download {mediaFile}","INFO")
+                    writeLog(f"[{user}] Attempting to download {mediaFile}","INFO")
                     wget.download(mediaFile,out=filename)
                     captured+=1
                except:
