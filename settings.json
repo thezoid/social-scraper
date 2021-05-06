@@ -1,9 +1,14 @@
 {
-     "redditSkip": "false",
-     "instaSkip": "false",
-     "agentName": "your agent name",
-     "clientID": "your client id",
-     "clientSecret": "your client secret",
+     "subRedditSkip": false,
+     "redditorSkip": false,
+     "instaSkip": false,
+     "twitSkip":false,
+     "red_agentName": "your reddit client agent name",
+     "red_clientID": "your reddit app client id",
+     "red_clientSecret": "your reddit app client secret",
+     "twit_consKey":"your twitter app consumer api key",
+     "twit_consSec":"your twitter app consumer sec token",
+     "twit_bearerTok":"your twitter app bearer token",
      "destination":"the root path to download to",
      "loggingLevel":1,
      "imageDomains": [
@@ -23,5 +28,8 @@
      ],
      "instalist":[
           "instagram username"
+     ],
+     "twitterList":[
+          "twitterHandle"
      ]
 }

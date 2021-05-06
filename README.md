@@ -15,6 +15,8 @@ DISCLAIMER: This project is to be used only for archival purposes.
  pip install instaloader
  pip install youtube_dl
  pip install praw
+ pip install wget
+ pip install tweepy
 ```
 
 ## known restrictions

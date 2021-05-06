@@ -1,5 +1,6 @@
 from logging import warn
 import requests
+import wget
 import shutil
 import os
 import json
@@ -9,6 +10,7 @@ import random
 import praw
 import instaloader
 import youtube_dl
+import tweepy
 
 #text colors
 class bcolors:
@@ -126,7 +128,7 @@ def getSubredditGIFV(filename):
      newFilename = filename[:lastSlashIndex]+"/"+filename.split("/")[-1].split(".")[0] + ".mp4"
      m="changed <"+filename+"> to <"+newFilename+">"
      writeLog(message=m,type="INFO")
-     getImage(filename=newFilename)
+     getSubredditImage(filename=newFilename)
 
 def getSubredditGallery(filename):
      #print("in getSubredditGallery")
@@ -134,7 +136,7 @@ def getSubredditGallery(filename):
      writeLog(message=m,type="INFO")
 
 #prep data from settings json
-def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList):
+def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList,_twitList,_twitterUsersList):
      for item in _scrapeList:
           if item.split("/")[0] == 'r' and not item.split("/")[1] in _subList:
                m="processing new sub: "+item
@@ -149,10 +151,25 @@ def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccount
           else:
                writeLog("invalid account provided "+item,type="WARNING")
      for item in  _instaList:
+          if item in _instaAccountList:
+               writeLog("duplicate item provided "+item,type="WARNING")
+               continue
           _instaAccountList.append(item)
+     for item in _twitList:
+          if item in _twitterUsersList:
+               writeLog("duplicate item provided "+item,type="WARNING")
+               continue
+          _twitterUsersList.append(item)
      _userList.sort()
      _subList.sort()
      random.shuffle(_instaAccountList) #random shuffle to try to rotate through rate limiting
+     _twitterUsersList.sort()
+
+@classmethod
+def parse(cls, api, raw):
+     status = cls.first_parse(api, raw)
+     setattr(status, 'json', json.dumps(raw))
+     return status
 
 #----- end funcs
 
@@ -161,9 +178,12 @@ startTime = datetime.datetime.now()
 with open("dev.settings.json") as settingsFile: #!!!CHANGE THIS BACK TO DEFAULT TO settings.json!!!
      settings = json.load(settingsFile)     
 
-clientID = settings["clientID"] #reddit app client id for praw
-clientSecret = settings["clientSecret"] #reddit app client secret for praw
-userAgent = settings["agentName"] #reddit app user agent name for praw
+red_clientID = settings["red_clientID"] #reddit app client id for praw
+red_clientSecret = settings["red_clientSecret"] #reddit app client secret for praw
+red_userAgent = settings["red_agentName"] #reddit app user agent name for praw
+twit_consKey= settings["twit_consKey"]
+twit_consSec= settings["twit_consSec"]
+twit_bearTok = settings["twit_bearerTok"]
 scrapeList = settings["scrapeList"] #raw scrape list for reddit accounts/subs
 imageDomains = settings["imageDomains"] #whitelist of domains to pull images from
 gifDomains = settings["gifDomains"] #whitelist of domains to pull gifs from
@@ -174,25 +194,29 @@ if loggingLevel > 3:
      loggingLevel = 3
 if loggingLevel < 0:
      loggingLevel = 0
-
 instaList = settings["instaList"] #list of insta accounts to scrape
+twitList = settings["twitterList"]
 subredSkip = settings["subRedditSkip"] #skip subreddit scrapes?
 redditorSkip = settings["redditorSkip"] #skip redditor scrapes?
 instaSkip = settings["instaSkip"] #skip insta scrapes?
+twitSkip = settings["twitSkip"] #skip twitter scrapes?
 userList = [] #processed list of reddit users
 subList = [] #processed listof subreddits
 instaAccounts = [] #processed list of instagram accounts
+twitUserList = [] #processed list of twitter users
 #stats for logging
 captured = 0
 warnings=0
 errors = 0
+tweetsSeen = 0
 
 
 #setup user and subreddit lists
-processScrapeList(_scrapeList=scrapeList,_userList=userList,_subList=subList, _instaList = instaList, _instaAccountList=instaAccounts)
+processScrapeList(_scrapeList=scrapeList,_userList=userList,_subList=subList, _instaList = instaList, _instaAccountList=instaAccounts, _twitList = twitList, _twitterUsersList= twitUserList)
 
 #praw reddit client setup
-reddit = praw.Reddit(client_id=clientID, client_secret=clientSecret, user_agent=userAgent)
+if not subredSkip or not redditorSkip:
+     reddit = praw.Reddit(client_id=red_clientID, client_secret=red_clientSecret, user_agent=red_userAgent)
 
 if not redditorSkip:
      #loop through all reddit users to pull content
@@ -397,8 +421,73 @@ if not instaSkip:
                m="exception thrown when processing "+profile
                writeLog(message=m, type="ERROR")
 
+if not twitSkip:
+     # Status() is the data model for a tweet
+     tweepy.models.Status.first_parse = tweepy.models.Status.parse
+     tweepy.models.Status.parse = parse
+     # User() is the data model for a user profil
+     tweepy.models.User.first_parse = tweepy.models.User.parse
+     tweepy.models.User.parse = parse
+     # You need to do it for all the models you need
+     auth = tweepy.AppAuthHandler(twit_consKey, twit_consSec)
+     twitter = tweepy.API(auth)
+     for user in twitUserList:
+          twitUserpath = rootPath+user+"/"
+          m="writing this twitter user content to - "+twitUserpath
+          writeLog(message=m,type="INFO")
+          try:
+               os.makedirs(os.path.dirname(twitUserpath), exist_ok=True)
+          except:
+               m = "Failed to create directory: "+twitUserpath
+               writeLog(message=m,type="ERROR")
+               continue
+
+          #get all tweets
+          allTweets = []
+          newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
+          allTweets.extend(newTweets)
+          count=0
+          while len(newTweets) > 0:
+               writeLog(f"[{(200*count)+200}]Getting next set of tweets...","INFO")
+               newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False,max_id=allTweets[-1].id - 1)
+               allTweets.extend(newTweets)
+               count+=1
+          tweetsSeen+=len(allTweets)
+          #parse all tweets for media links
+          mediaFiles = []
+          for tweet in allTweets:
+               tweetAsJSON = json.loads(tweet.json)
+               try:
+                    if len(tweetAsJSON["entities"]["media"]) > 0:
+                         for m in tweetAsJSON["entities"]["media"]:
+                              mediaFiles.append(m["media_url"])
+               except:
+                    twtID = tweetAsJSON["id"]
+                    twtLink = f"https://twitter.com/{user}/status/{twtID}"
+                    writeLog(f"Tweet (ID: {twtID} | Link: {twtLink}) didn't have a media entity key","WARNING")
+          
+          #download all media links
+          mediaCount =0
+          for mediaFile in mediaFiles:
+               mediaCount+=1
+               #build filename for local write
+               filename = mediaFile.split("/")[-1]
+               filename = filename.replace("?","")
+               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename
+               #check if file exists - do not overwrite if it does
+               if  os.path.exists(filename):
+                    m="File already exists -"+filename
+                    writeLog(message=m,type="WARNING")
+                    continue
+               try:
+                    writeLog(f"Attempting to download {mediaFile}","INFO")
+                    wget.download(mediaFile,out=filename)
+                    captured+=1
+               except:
+                    writeLog(f"Failed to download {mediaFile}","ERROR")
+
 endTime = datetime.datetime.now()
-print("\033[1;32;40mDownloaded:",str(captured),"\nRedditors:",str(len(userList)),"\nSubreddits:",str(len(subList)),"\nInsta Accounts:",str(len(instaList)),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
+print("\033[1;32;40mDownloaded:",str(captured),"\nRedditors:",str(len(userList)),"\nSubreddits:",str(len(subList)),"\nInsta Accounts:",str(len(instaList)),"\nTwitter Accounts:",str(len(twitUserList)),"\nTweets seen",str(tweetsSeen),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
 if loggingLevel >=2:
      print("Warnings:",str(warnings))
 if loggingLevel >=1:
