@@ -123,7 +123,7 @@ def getSubredditGIF(filename):
 def getSubredditGIFV(filename):
      #print("in getSubredditSubredditGIFV")
      lastSlashIndex = filename.rfind("/")
-     newFilename = filename[:lastSlashIndex]+filename.split("/")[-1].split(".")[0] + ".mp4"
+     newFilename = filename[:lastSlashIndex]+"/"+filename.split("/")[-1].split(".")[0] + ".mp4"
      m="changed <"+filename+"> to <"+newFilename+">"
      writeLog(message=m,type="INFO")
      getImage(filename=newFilename)
@@ -176,7 +176,8 @@ if loggingLevel < 0:
      loggingLevel = 0
 
 instaList = settings["instaList"] #list of insta accounts to scrape
-redSkip = settings["redditSkip"] #skip reddit scrapes?
+subredSkip = settings["subRedditSkip"] #skip subreddit scrapes?
+redditorSkip = settings["redditorSkip"] #skip redditor scrapes?
 instaSkip = settings["instaSkip"] #skip insta scrapes?
 userList = [] #processed list of reddit users
 subList = [] #processed listof subreddits
@@ -193,211 +194,208 @@ processScrapeList(_scrapeList=scrapeList,_userList=userList,_subList=subList, _i
 #praw reddit client setup
 reddit = praw.Reddit(client_id=clientID, client_secret=clientSecret, user_agent=userAgent)
 
-#loop through all reddit users to pull content
-for username in userList:
-     if(redSkip.lower() == "true"):
-          break
-     #try to get user - continue to next if error
-     try:
-          user = reddit.redditor(username)
-          m="getting user "+user.name
+if not redditorSkip:
+     #loop through all reddit users to pull content
+     for username in userList:
+          #try to get user - continue to next if error
+          try:
+               user = reddit.redditor(username)
+               m="getting user "+user.name
+               writeLog(message=m,type="INFO")
+          except:
+               m="Failed to get user: "+username
+               writeLog(message=m,type="ERROR")
+               continue
+          #setup path to write files to
+          userpath = rootPath+user.name+"/"
+          m="writing this user content to - "+userpath
           writeLog(message=m,type="INFO")
-     except:
-          m="Failed to get user: "+username
-          writeLog(message=m,type="ERROR")
-          continue
-     #setup path to write files to
-     userpath = rootPath+user.name+"/"
-     m="writing this user content to - "+userpath
-     writeLog(message=m,type="INFO")
-     #create base path per username scraped
-     try:
-          os.makedirs(os.path.dirname(userpath), exist_ok=True)
-     except:
-          m = "Failed to create directory: "+userpath
-          writeLog(message=m,type="ERROR")
-          continue
-     #try to get all submissions from a user
-     try:
-          submissions = user.submissions.top("all")
-     except:
-          m="couldnt get top submissions - "+user.name
-          writeLog(message=m,type="ERROR")
-          continue
-     subcount = 0
-     for submission in submissions:
-          captured+=1
-          subcount+= 1
-          #convert imgur.com links into i.imgur.com links
-          if submission.domain == "imgur.com":
-               modURL = submission.url
-               modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
-               m="changed <"+submission.url+"> to <"+modURL+">"
-               writeLog(message=m,type="INFO")
-               m= "getting [",user.name,"] "+submission.title+" "+modURL
-               writeLog(message=m,type="INFO")
-               getImage(filename=modURL)
+          #create base path per username scraped
+          try:
+               os.makedirs(os.path.dirname(userpath), exist_ok=True)
+          except:
+               m = "Failed to create directory: "+userpath
+               writeLog(message=m,type="ERROR")
                continue
+          #try to get all submissions from a user
+          try:
+               submissions = user.submissions.top("all")
+          except:
+               m="couldnt get top submissions - "+user.name
+               writeLog(message=m,type="ERROR")
+               continue
+          subcount = 0
+          for submission in submissions:
+               captured+=1
+               subcount+= 1
+               #convert imgur.com links into i.imgur.com links
+               if submission.domain == "imgur.com":
+                    modURL = submission.url
+                    modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
+                    m="changed <"+submission.url+"> to <"+modURL+">"
+                    writeLog(message=m,type="INFO")
+                    m= "getting [",user.name,"] "+submission.title+" "+modURL
+                    writeLog(message=m,type="INFO")
+                    getImage(filename=modURL)
+                    continue
 
-          #parse gifv and kick off  gifv grabbing
-          if submission.url.split(".")[-1] == "gifv":
-               #print("got a gifv")
-               getGIFV(filename=submission.url)
-               continue
-          
-          #download items from video domains using youtube-dl
-          if submission.domain in videoDomains:
-               m="getting ["+user.name+"] "+submission.title+" "+submission.url
-               writeLog(message=m,type="INFO")
-               ydl_opts = {
-                    'formate':'best',
-                    'outtmpl': userpath+str(subcount)+"-"+user.name+"-"+"%(title)s.%(ext)s",
-                    'cachedir': False,
-                    'force_generic_extractor': (submission.domain in videoDomains or submission.domain in gifDomains),
-                    'quiet':(loggingLevel <= 2),
-                    'no_warnings': (loggingLevel < 2)
-               }
-               print(bcolors.OKBLUE,end="")
-               try:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                         ydl.download([submission.url])
-               except:
-                    writeLog(message="failed to download video - "+submission.url+" "+submission.domain,type="ERROR")
-               print(bcolors.ENDC,end="")
-               continue
+               #parse gifv and kick off  gifv grabbing
+               if submission.url.split(".")[-1] == "gifv":
+                    #print("got a gifv")
+                    getGIFV(filename=submission.url)
+                    continue
+               
+               #download items from video domains using youtube-dl
+               if submission.domain in videoDomains:
+                    m="getting ["+user.name+"] "+submission.title+" "+submission.url
+                    writeLog(message=m,type="INFO")
+                    ydl_opts = {
+                         'formate':'best',
+                         'outtmpl': userpath+str(subcount)+"-"+user.name+"-"+"%(title)s.%(ext)s",
+                         'cachedir': False,
+                         'force_generic_extractor': (submission.domain in videoDomains or submission.domain in gifDomains),
+                         'quiet':(loggingLevel <= 2),
+                         'no_warnings': (loggingLevel < 2)
+                    }
+                    print(bcolors.OKBLUE,end="")
+                    try:
+                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                              ydl.download([submission.url])
+                    except:
+                         writeLog(message="failed to download video - "+submission.url+" "+submission.domain,type="ERROR")
+                    print(bcolors.ENDC,end="")
+                    continue
 
-          if "gallery" in submission.url and submission.domain == "reddit.com":
-               getGallery(filename=submission.url)
-               continue
+               if "gallery" in submission.url and submission.domain == "reddit.com":
+                    getGallery(filename=submission.url)
+                    continue
 
-          #standard image grab
-          if(not submission.is_self and submission.domain in imageDomains):
-               m="getting ["+user.name+"] "+submission.title+" "+submission.url
-               writeLog(message=m,type="INFO")
-               getImage(filename=submission.url)
-          #gif grab
-          elif(not submission.is_self and submission.domain in gifDomains):
-               m="getting ["+user.name+"] "+submission.title+" "+submission.url+" "+submission.domain
-               writeLog(message=m,type="INFO")
-               getGIF(filename=submission.url)
-          #case to catch all other items
+               #standard image grab
+               if(not submission.is_self and submission.domain in imageDomains):
+                    m="getting ["+user.name+"] "+submission.title+" "+submission.url
+                    writeLog(message=m,type="INFO")
+                    getImage(filename=submission.url)
+               #gif grab
+               elif(not submission.is_self and submission.domain in gifDomains):
+                    m="getting ["+user.name+"] "+submission.title+" "+submission.url+" "+submission.domain
+                    writeLog(message=m,type="INFO")
+                    getGIF(filename=submission.url)
+               #case to catch all other items
+               else:
+                    m = "NOT IMAGE - "+submission.title+" "+submission.url+" "+submission.domain
+                    writeLog(message=m,type="WARNING")
+                    continue
+
+if not subredSkip:
+     #loop through all subreddits to pull content
+     #takes advantage of pushshift api
+     for subname in subList:
+          query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+str(round(time.time()))+"&size=1000"
+          m="requesting "+query
+          writeLog(message=m, type="INFO")
+          r = requests.get(query, stream = True)
+          if r.status_code == 200:
+               data = r.json()
           else:
-               m = "NOT IMAGE - "+submission.title+" "+submission.url+" "+submission.domain
-               writeLog(message=m,type="WARNING")
+               m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
+               writeLog(message=m,type="ERROR")
                continue
+          #setup path to write files to
+          subpath = rootPath+subname+"/"
+          m="writing this subreddit content to - "+subpath
+          writeLog(message=m,type="INFO")
+          #create base path per username scraped
+          try:
+               os.makedirs(os.path.dirname(subpath), exist_ok=True)
+          except:
+               m = "Failed to create directory: "+subpath
+               writeLog(message=m,type="ERROR")
+               continue
+          #try to get all submissions from a user
+          subcount = 0
+          for submission in data.get("data"):
+               captured+=1
+               subcount+= 1
+               url = submission["url"]
+               #convert imgur.com links into i.imgur.com links
+               if submission["domain"] == "imgur.com":
+                    modURL = url
+                    modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
+                    m="changed <"+url+"> to <"+modURL+">"
+                    writeLog(message=m,type="INFO")
+                    m= "getting [",subname,"] "+submission["title"]+" "+modURL
+                    writeLog(message=m,type="INFO")
+                    getSubredditImage(filename=modURL)
+                    continue
 
-#loop through all subreddits to pull content
-#takes advantage of pushshift api
-for subname in subList:
-     if(redSkip.lower() == "true"):
-          break
-     query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+str(round(time.time()))+"&size=1000"
-     m="requesting "+query
-     writeLog(message=m, type="INFO")
-     r = requests.get(query, stream = True)
-     if r.status_code == 200:
-          data = r.json()
-     else:
-          m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
-          writeLog(message=m,type="ERROR")
-          continue
-     #setup path to write files to
-     subpath = rootPath+subname+"/"
-     m="writing this subreddit content to - "+subpath
-     writeLog(message=m,type="INFO")
-     #create base path per username scraped
-     try:
-          os.makedirs(os.path.dirname(subpath), exist_ok=True)
-     except:
-          m = "Failed to create directory: "+subpath
-          writeLog(message=m,type="ERROR")
-          continue
-     #try to get all submissions from a user
-     subcount = 0
-     for submission in data.get("data"):
-          captured+=1
-          subcount+= 1
-          url = submission["url"]
-          #convert imgur.com links into i.imgur.com links
-          if submission["domain"] == "imgur.com":
-               modURL = url
-               modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
-               m="changed <"+url+"> to <"+modURL+">"
-               writeLog(message=m,type="INFO")
-               m= "getting [",subname,"] "+submission["title"]+" "+modURL
-               writeLog(message=m,type="INFO")
-               getSubredditImage(filename=modURL)
-               continue
+               #parse gifv and kick off  gifv grabbing
+               if url.split(".")[-1] == "gifv":
+                    #print("got a gifv")
+                    getSubredditGIFV(filename=url)
+                    continue
+               
+               #download items from video domains using youtube-dl
+               if submission["domain"] in videoDomains:
+                    m="getting ["+subname+"] "+submission["title"]+" "+url
+                    writeLog(message=m,type="INFO")
+                    ydl_opts = {
+                         'formate':'best',
+                         'outtmpl': subpath+str(subcount)+"-"+subname+"-"+"%(title)s.%(ext)s",
+                         'cachedir': False,
+                         'force_generic_extractor': (submission["domain"] in videoDomains or submission["domain"] in gifDomains),
+                         'quiet':(loggingLevel <= 2),
+                         'no_warnings': (loggingLevel < 2)
+                    }
+                    print(bcolors.OKBLUE,end="")
+                    try:
+                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                              ydl.download([url])
+                    except:
+                         writeLog(message="failed to download video - "+url+" "+submission["domain"],type="ERROR")
+                    print(bcolors.ENDC,end="")
+                    continue
 
-          #parse gifv and kick off  gifv grabbing
-          if url.split(".")[-1] == "gifv":
-               #print("got a gifv")
-               getSubredditGIFV(filename=url)
-               continue
-          
-          #download items from video domains using youtube-dl
-          if submission["domain"] in videoDomains:
-               m="getting ["+subname+"] "+submission["title"]+" "+url
-               writeLog(message=m,type="INFO")
-               ydl_opts = {
-                    'formate':'best',
-                    'outtmpl': subpath+str(subcount)+"-"+subname+"-"+"%(title)s.%(ext)s",
-                    'cachedir': False,
-                    'force_generic_extractor': (submission["domain"] in videoDomains or submission["domain"] in gifDomains),
-                    'quiet':(loggingLevel <= 2),
-                    'no_warnings': (loggingLevel < 2)
-               }
-               print(bcolors.OKBLUE,end="")
-               try:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                         ydl.download([url])
-               except:
-                    writeLog(message="failed to download video - "+url+" "+submission["domain"],type="ERROR")
-               print(bcolors.ENDC,end="")
-               continue
+               if "gallery" in url and submission["domain"] == "reddit.com":
+                    getSubredditGallery(filename=url)
+                    continue
 
-          if "gallery" in url and submission["domain"] == "reddit.com":
-               getSubredditGallery(filename=url)
-               continue
+               #standard image grab
+               if(not submission["is_self"] and submission["domain"] in imageDomains):
+                    m="getting ["+subname+"] "+submission["title"]+" "+url
+                    writeLog(message=m,type="INFO")
+                    getSubredditImage(filename=url)
+               #gif grab
+               elif(not submission["is_self"] and submission["domain"] in gifDomains):
+                    m="getting ["+subname+"] "+submission["title"]+" "+submission["url"]+" "+submission["domain"]
+                    writeLog(message=m,type="INFO")
+                    getSubredditGIF(filename=url)
+               #case to catch all other items
+               else:
+                    m = "NOT IMAGE - "+submission["title"]+" "+url+" "+submission["domain"]
+                    writeLog(message=m,type="WARNING")
+                    continue
 
-          #standard image grab
-          if(not submission["is_self"] and submission["domain"] in imageDomains):
-               m="getting ["+subname+"] "+submission["title"]+" "+url
-               writeLog(message=m,type="INFO")
-               getSubredditImage(filename=url)
-          #gif grab
-          elif(not submission["is_self"] and submission["domain"] in gifDomains):
-               m="getting ["+subname+"] "+submission["title"]+" "+submission["url"]+" "+submission["domain"]
-               writeLog(message=m,type="INFO")
-               getSubredditGIF(filename=url)
-          #case to catch all other items
-          else:
-               m = "NOT IMAGE - "+submission["title"]+" "+url+" "+submission["domain"]
-               writeLog(message=m,type="WARNING")
+if not instaSkip:
+     #loop through all insta profiles to scrape content
+     for profile in instaList:
+          userpath = rootPath+profile+"/"
+          m="writing this user content to - "+userpath
+          writeLog(message=m,type="INFO")
+          #create base path per username scraped
+          try:
+               os.makedirs(os.path.dirname(userpath), exist_ok=True)
+          except:
+               m = "Failed to create directory: "+userpath
+               writeLog(message=m,type="ERROR")
                continue
-
-#loop through all insta profiles to scrape content
-for profile in instaList:
-     if  instaSkip.lower() == "true":
-          break
-     userpath = rootPath+profile+"/"
-     m="writing this user content to - "+userpath
-     writeLog(message=m,type="INFO")
-     #create base path per username scraped
-     try:
-          os.makedirs(os.path.dirname(userpath), exist_ok=True)
-     except:
-          m = "Failed to create directory: "+userpath
-          writeLog(message=m,type="ERROR")
-          continue
-     mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
-     m="Attempting to download "+profile
-     writeLog(message=m,type="INFO")
-     try:
-          mod.download_profile(profile)
-     except:
-          m="exception thrown when processing "+profile
-          writeLog(message=m, type="ERROR")
+          mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
+          m="Attempting to download "+profile
+          writeLog(message=m,type="INFO")
+          try:
+               mod.download_profile(profile)
+          except:
+               m="exception thrown when processing "+profile
+               writeLog(message=m, type="ERROR")
 
 endTime = datetime.datetime.now()
 print("\033[1;32;40mDownloaded:",str(captured),"\nRedditors:",str(len(userList)),"\nSubreddits:",str(len(subList)),"\nInsta Accounts:",str(len(instaList)),"\nDuration:",datetime.timedelta(seconds=(endTime - startTime).total_seconds()))
