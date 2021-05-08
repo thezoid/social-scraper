@@ -179,8 +179,9 @@ def parse(cls, api, raw):
 #----- end funcs
 
 startTime = datetime.datetime.now()
+scriptdir = os.path.dirname(os.path.realpath(__file__))
 #read ./settings.json
-with open("dev.settings.json") as settingsFile: #!!!CHANGE THIS BACK TO DEFAULT TO settings.json!!!
+with open(scriptdir+"/dev.settings.json") as settingsFile: #!!!CHANGE THIS BACK TO DEFAULT TO settings.json!!!
      settings = json.load(settingsFile)     
 
 red_clientID = settings["red_clientID"] #reddit app client id for praw
