@@ -1,8 +1,14 @@
 # social-scraper [![discord](https://img.shields.io/discord/136001983852052480.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://clan.bravebearstudios.com)  [![Tips](https://img.shields.io/badge/Donate-PayPal-green.svg)](paypal.me/BraveBearStudios)
 
-![Linux](https://github.com/thezoid/social-scraper/actions/workflows/app_linuxBuild.yml/badge.svg?branch=master)
-![Mac](https://github.com/thezoid/social-scraper/actions/workflows/app_macBuild.yml/badge.svg?branch=master)
-![Windows](https://github.com/thezoid/social-scraper/actions/workflows/app_windowsBuild.yml/badge.svg?branch=master)
+*master*
+![Linux](https://github.com/thezoid/social-scraper/actions/workflows/app_linuxBuild.yml/badge.svg?branch=main)
+![Mac](https://github.com/thezoid/social-scraper/actions/workflows/app_macBuild.yml/badge.svg?branch=main)
+![Windows](https://github.com/thezoid/social-scraper/actions/workflows/app_windowsBuild.yml/badge.svg?branch=main)
+
+*dev*
+![Linux](https://github.com/thezoid/social-scraper/actions/workflows/app_linuxBuild.yml/badge.svg?branch=dev)
+![Mac](https://github.com/thezoid/social-scraper/actions/workflows/app_macBuild.yml/badge.svg?branch=dev)
+![Windows](https://github.com/thezoid/social-scraper/actions/workflows/app_windowsBuild.yml/badge.svg?branch=dev)
 
 A quick python project to allow the downloading of content from specificed social sites.
 
@@ -13,6 +19,7 @@ DISCLAIMER: This project is to be used only for archival purposes.
  Requires instaloader, youtube_dl, and praw. praw erquires additional setup; h/e youtube_dl and instaloader work OOTB.
 
  [How to register app for praw](https://praw.readthedocs.io/en/latest/getting_started/authentication.html#installed-application)
+ 
  [Twitter needs a dev app registered](https://developer.twitter.com)
 
 ```python
