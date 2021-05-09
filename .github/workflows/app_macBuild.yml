@@ -1,4 +1,4 @@
-name: ShopPyBot Mac
+name: Mac Build
 
 on:
   push:
