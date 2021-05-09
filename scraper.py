@@ -137,38 +137,43 @@ def getSubredditGallery(filename):
      writeLog(message=m,type="INFO")
 
 #prep data from settings json
-def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList,_twitList,_twitterUsersList):
-     for item in _scrapeList:
-          if item.split("/")[0] == 'r' and not item.split("/")[1] in _subList:
-               m="[Subreddit] processing new sub: "+item
+def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList,_twitList,_twitterUsersList,_subredSkip,_redditorSkip,_instaSkip,_twitSkip):
+     if not _redditorSkip and not _subredSkip:
+          for item in _scrapeList:
+               if item.split("/")[0] == 'r' and not item.split("/")[1] in _subList and not _subredSkip:
+                    m="[Subreddit] processing new sub: "+item
+                    writeLog(message=m,type="INFO")
+                    _subList.append(item.split("/")[1])
+               elif item.split("/")[0] == 'u' and not item.split("/")[1] in _userList and not _redditorSkip:
+                    m="[Redditor] processing new user: "+item
+                    writeLog(message=m,type="INFO")
+                    _userList.append(item.split("/")[1])
+               elif item.split("/")[1] in _userList or item.split("/")[1] in _subList:
+                    writeLog("duplicate item provided "+item,type="WARNING")
+               else:
+                    writeLog("invalid account provided "+item,type="WARNING")
+          if not _redditorSkip:
+               _userList.sort()
+          if not _subredSkip:
+               _subList.sort()
+     if not _instaSkip:
+          for item in  _instaList:
+               if item in _instaAccountList:
+                    writeLog("duplicate item provided "+item,type="WARNING")
+                    continue
+               m="[Instagram] processing new user: "+item
                writeLog(message=m,type="INFO")
-               _subList.append(item.split("/")[1])
-          elif item.split("/")[0] == 'u' and not item.split("/")[1] in _userList:
-               m="[Redditor] processing new user: "+item
+               _instaAccountList.append(item)
+          random.shuffle(_instaAccountList) #random shuffle to try to rotate through rate limiting
+     if not _twitSkip:
+          for item in _twitList:
+               if item in _twitterUsersList:
+                    writeLog("duplicate item provided "+item,type="WARNING")
+                    continue
+               m="[Twitter] processing new user: "+item
                writeLog(message=m,type="INFO")
-               _userList.append(item.split("/")[1])
-          elif item.split("/")[1] in _userList or item.split("/")[1] in _subList:
-               writeLog("duplicate item provided "+item,type="WARNING")
-          else:
-               writeLog("invalid account provided "+item,type="WARNING")
-     for item in  _instaList:
-          if item in _instaAccountList:
-               writeLog("duplicate item provided "+item,type="WARNING")
-               continue
-          m="[Instagram] processing new user: "+item
-          writeLog(message=m,type="INFO")
-          _instaAccountList.append(item)
-     for item in _twitList:
-          if item in _twitterUsersList:
-               writeLog("duplicate item provided "+item,type="WARNING")
-               continue
-          m="[Twitter] processing new user: "+item
-          writeLog(message=m,type="INFO")
-          _twitterUsersList.append(item)
-     _userList.sort()
-     _subList.sort()
-     random.shuffle(_instaAccountList) #random shuffle to try to rotate through rate limiting
-     _twitterUsersList.sort()
+               _twitterUsersList.append(item)
+          _twitterUsersList.sort()     
 
 @classmethod
 def parse(cls, api, raw):
