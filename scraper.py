@@ -224,7 +224,7 @@ tweetsSeen = 0
 
 
 #setup user and subreddit lists
-processScrapeList(_scrapeList=scrapeList,_userList=userList,_subList=subList, _instaList = instaList, _instaAccountList=instaAccounts, _twitList = twitList, _twitterUsersList= twitUserList)
+processScrapeList(_scrapeList=scrapeList,_userList=userList,_subList=subList, _instaList = instaList, _instaAccountList=instaAccounts, _twitList = twitList, _twitterUsersList= twitUserList,_subredSkip=subredSkip,_redditorSkip=redditorSkip,_instaSkip=instaSkip,_twitSkip=twitSkip)
 
 #praw reddit client setup
 if not subredSkip or not redditorSkip:
