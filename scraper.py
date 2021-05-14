@@ -83,10 +83,39 @@ def getGIFV(filename):
      writeLog(message=m,type="INFO")
      getImage(filename=newFilename)
 
-def getGallery(filename):
-     #print("in getGallery")
-     m="getting gallery from "+filename
+def getGallery(_id,_url,_author,_out):
+     m="getting gallery from "+_url
      writeLog(message=m,type="INFO")
+     query = f"https://api.pushshift.io/reddit/search/submission/?id={_id}&author={_author}"
+     r = requests.get(query, stream = True)
+     if r.status_code == 200:
+          data = r.json()
+     else:
+          m="query for "+_url+" couldn't be processed... CODE"+str(r.status_code)
+          writeLog(message=m,type="ERROR")
+          return
+     for i in data["data"]:
+          if i["url"]:
+               if("gallery" in i["url"].split("/")):
+                    if i["media_metadata"]:
+                         for j in i["media_metadata"]:
+                              global scriptdir
+                              with open(scriptdir+"/local/out.json","w") as jsonFile:
+                                   json.dump(i["media_metadata"][j],jsonFile)
+                              imgID = i["media_metadata"][j]["id"]
+                              imgExt = i["media_metadata"][j]["m"].split("/")[1]
+                              filename = _out+f"{imgID}.{imgExt}" 
+                              if  os.path.exists(filename):
+                                   m="File already exists -"+filename
+                                   writeLog(message=m,type="WARNING")
+                                   return
+                              link = "".join(i["media_metadata"][j]["s"]["u"].split("amp;"))
+                              try:
+                                   writeLog(f"\n[{user}] Attempting to download {link} to {_out}","INFO")
+                                   wget.download(link,out=filename)
+                              except:
+                                   writeLog(f"\nFailed to download {link}","ERROR")
+                    
 
 def getSubredditImage(filename):
      #print("in getSubredditImage")
@@ -310,7 +339,7 @@ if not redditorSkip:
                     continue
 
                if "gallery" in submission.url and submission.domain == "reddit.com":
-                    getGallery(filename=submission.url)
+                    getGallery(submission.id,submission.url,submission.author,userpath)
                     continue
 
                #standard image grab
@@ -406,7 +435,7 @@ if not subredSkip:
                     continue
 
                if "gallery" in url and submission["domain"] == "reddit.com":
-                    getSubredditGallery(filename=url)
+                    getSubredditGallery(submission["id"])
                     continue
 
                #standard image grab
@@ -446,6 +475,7 @@ if not instaSkip:
           except:
                m="exception thrown when processing "+profile
                writeLog(message=m, type="ERROR")
+          time.sleep(seconds=15*60)
 
 if not twitSkip:
      # Status() is the data model for a tweet
