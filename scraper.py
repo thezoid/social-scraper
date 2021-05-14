@@ -91,15 +91,21 @@ def getGallery(_id,_url,_author,_out):
      if r.status_code == 200:
           data = r.json()
      else:
-          m="query for "+_url+" couldn't be processed... CODE"+str(r.status_code)
-          writeLog(message=m,type="ERROR")
+          if(r.status_code == 429):
+               writeLog(message=f"Error means TOO MANY REQUESTS [{r.status_code}]",type="ERROR")
+          else:
+               m="query for "+_url+" couldn't be processed... CODE "+str(r.status_code)
+               writeLog(message=m,type="ERROR")
           return
      for i in data["data"]:
+          global scriptdir
+          with open(scriptdir+"/local/out.json","w") as jsonFile:
+               json.dump(i,jsonFile)
           if i["url"]:
                if("gallery" in i["url"].split("/")):
-                    if i["media_metadata"]:
+                    try:
                          for j in i["media_metadata"]:
-                              global scriptdir
+                              
                               with open(scriptdir+"/local/out.json","w") as jsonFile:
                                    json.dump(i["media_metadata"][j],jsonFile)
                               imgID = i["media_metadata"][j]["id"]
@@ -115,6 +121,8 @@ def getGallery(_id,_url,_author,_out):
                                    wget.download(link,out=filename)
                               except:
                                    writeLog(f"\nFailed to download {link}","ERROR")
+                    except:
+                         writeLog(f"\nFailed to to get 'media_metadata' key","ERROR")
                     
 
 def getSubredditImage(filename):
