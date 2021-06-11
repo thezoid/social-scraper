@@ -48,28 +48,31 @@ def getImage(filename):
           getGIFV(filename=filename)
           return
      #build filename for local write
-     filename = submission.url.split("/")[-1]
-     filename = filename.replace("?","")
-     filename = userpath+str(subcount)+"-"+user.name+"-"+filename
-     #check if file exists - do not overwrite if it does
-     if  os.path.exists(filename):
-          m="File already exists -"+filename
-          writeLog(message=m,type="WARNING")
-          return
-     # Open the url image, set stream to True, this will return the stream content.
-     r = requests.get(submission.url, stream = True)
-     # Check if the image was retrieved successfully
-     if r.status_code == 200:
-          # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
-          r.raw.decode_content = True
-          # Open a local file with wb ( write binary ) permission.
-          with open(filename,'wb') as f:
-               shutil.copyfileobj(r.raw, f)
-          m="Image sucessfully Downloaded: "+filename
-          writeLog(message=m,type="INFO")
-     else:
-          m="Image Couldn\'t be retreived: "+submission.url+" CODE: "+str(r.status_code)
-          writeLog(message=m,type="ERROR")
+     try:
+          filename = submission.url.split("/")[-1]
+          filename = filename.replace("?","")
+          filename = userpath+str(subcount)+"-"+user.name+"-"+filename
+          #check if file exists - do not overwrite if it does
+          if  os.path.exists(filename):
+               m="File already exists -"+filename
+               writeLog(message=m,type="WARNING")
+               return
+          # Open the url image, set stream to True, this will return the stream content.
+          r = requests.get(submission.url, stream = True)
+          # Check if the image was retrieved successfully
+          if r.status_code == 200:
+               # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+               r.raw.decode_content = True
+               # Open a local file with wb ( write binary ) permission.
+               with open(filename,'wb') as f:
+                    shutil.copyfileobj(r.raw, f)
+               m="Image sucessfully Downloaded: "+filename
+               writeLog(message=m,type="INFO")
+          else:
+               m="Image Couldn\'t be retreived: "+submission.url+" CODE: "+str(r.status_code)
+               writeLog(message=m,type="ERROR")
+     except:
+          writeLog(f"Failed to get {filename}","ERROR")
 
 def getGIF(filename):
      #print("in getGIF")
@@ -125,14 +128,14 @@ def getGallery(_id,_url,_author,_out):
                          writeLog(f"\nFailed to to get 'media_metadata' key","ERROR")
                     
 
-def getSubredditImage(filename):
+def getSubredditImage(_fname):
      #print("in getSubredditImage")
      #catch gifv links to get special parsing
-     if filename.split(".")[-1] == "gifv":
-          getGIFV(filename=filename)
+     if _fname.split(".")[-1] == "gifv":
+          getGIFV(filename=_fname)
           return
      #build filename for local write
-     filename = url.split("/")[-1]
+     filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
      filename = subpath+str(subcount)+"-"+subname+"-"+filename
      #check if file exists - do not overwrite if it does
@@ -166,7 +169,7 @@ def getSubredditGIFV(filename):
      newFilename = filename[:lastSlashIndex]+"/"+filename.split("/")[-1].split(".")[0] + ".mp4"
      m="changed <"+filename+"> to <"+newFilename+">"
      writeLog(message=m,type="INFO")
-     getSubredditImage(filename=newFilename)
+     getSubredditImage(newFilename)
 
 def getSubredditGallery(filename):
      #print("in getSubredditGallery")
@@ -405,7 +408,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     m= "getting [",subname,"] "+submission["title"]+" "+modURL
                     writeLog(message=m,type="INFO")
-                    getSubredditImage(filename=modURL)
+                    getSubredditImage(modURL)
                     continue
 
                #parse gifv and kick off  gifv grabbing
@@ -450,7 +453,7 @@ if not subredSkip:
                if(not submission["is_self"] and submission["domain"] in imageDomains):
                     m="getting ["+subname+"] "+submission["title"]+" "+url
                     writeLog(message=m,type="INFO")
-                    getSubredditImage(filename=url)
+                    getSubredditImage(url)
                #gif grab
                elif(not submission["is_self"] and submission["domain"] in gifDomains):
                     m="getting ["+subname+"] "+submission["title"]+" "+submission["url"]+" "+submission["domain"]
@@ -483,7 +486,9 @@ if not instaSkip:
           except:
                m="exception thrown when processing "+profile
                writeLog(message=m, type="ERROR")
-          time.sleep(seconds=15*60)
+          # waitTime = 15*60
+          # writeLog(f"({waitTime}m)Waiting between Instagram accounts...","INFO")
+          # time.sleep(waitTime)
 
 if not twitSkip:
      # Status() is the data model for a tweet
