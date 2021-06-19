@@ -1,4 +1,3 @@
-from logging import warn
 import math
 import requests
 import wget
@@ -301,73 +300,77 @@ if not redditorSkip:
                writeLog(message=m,type="ERROR")
                continue
           subcount = 0
-          for submission in submissions:
-               captured+=1
-               subcount+= 1
-               #convert imgur.com links into i.imgur.com links
-               if submission.domain == "imgur.com":
-                    modURL = submission.url
-                    modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
-                    m="changed <"+submission.url+"> to <"+modURL+">"
-                    writeLog(message=m,type="INFO")
-                    m= "getting [",user.name,"] "+submission.title+" "+modURL
-                    writeLog(message=m,type="INFO")
-                    getImage(filename=modURL)
-                    continue
+          try:
+               for submission in submissions:
+                    captured+=1
+                    subcount+= 1
+                    #convert imgur.com links into i.imgur.com links
+                    if submission.domain == "imgur.com":
+                         modURL = submission.url
+                         modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
+                         m="changed <"+submission.url+"> to <"+modURL+">"
+                         writeLog(message=m,type="INFO")
+                         m= "getting [",user.name,"] "+submission.title+" "+modURL
+                         writeLog(message=m,type="INFO")
+                         getImage(filename=modURL)
+                         continue
 
-               #parse gifv and kick off  gifv grabbing
-               if submission.url.split(".")[-1] == "gifv":
-                    #print("got a gifv")
-                    getGIFV(filename=submission.url)
-                    continue
-               
-               #download items from video domains using youtube-dl
-               if submission.domain in videoDomains:
-                    m="getting ["+user.name+"] "+submission.title+" "+submission.url
-                    writeLog(message=m,type="INFO")
-                    filename = submission.url.split("/")[-1]
-                    filename = filename.replace("?","")
-                    filename = userpath+str(subcount)+"-"+user.name+"-"+filename
-                    if  os.path.exists(filename):
-                         m="File already exists -"+filename
+                    #parse gifv and kick off  gifv grabbing
+                    if submission.url.split(".")[-1] == "gifv":
+                         #print("got a gifv")
+                         getGIFV(filename=submission.url)
+                         continue
+                    
+                    #download items from video domains using youtube-dl
+                    if submission.domain in videoDomains:
+                         m="getting ["+user.name+"] "+submission.title+" "+submission.url
+                         writeLog(message=m,type="INFO")
+                         filename = submission.url.split("/")[-1]
+                         filename = filename.replace("?","")
+                         filename = userpath+str(subcount)+"-"+user.name+"-"+filename
+                         if  os.path.exists(filename):
+                              m="File already exists -"+filename
+                              writeLog(message=m,type="WARNING")
+                              continue
+                         ydl_opts = {
+                              'format':'best',
+                              'outtmpl': filename,
+                              'cachedir': False,
+                              'force_generic_extractor': (submission.domain in videoDomains or submission.domain in gifDomains),
+                              'quiet':(loggingLevel <= 2),
+                              'no_warnings': (loggingLevel < 2)
+                         }
+                         print(bcolors.OKBLUE,end="")
+                         try:
+                              with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                   ydl.download([submission.url])
+                         except:
+                              writeLog(message="failed to download video - "+submission.url+" "+submission.domain,type="ERROR")
+                         print(bcolors.ENDC,end="")
+                         continue
+
+                    if "gallery" in submission.url and submission.domain == "reddit.com":
+                         getGallery(submission.id,submission.url,submission.author,userpath)
+                         continue
+
+                    #standard image grab
+                    if(not submission.is_self and submission.domain in imageDomains):
+                         m="getting ["+user.name+"] "+submission.title+" "+submission.url
+                         writeLog(message=m,type="INFO")
+                         getImage(filename=submission.url)
+                    #gif grab
+                    elif(not submission.is_self and submission.domain in gifDomains):
+                         m="getting ["+user.name+"] "+submission.title+" "+submission.url+" "+submission.domain
+                         writeLog(message=m,type="INFO")
+                         getGIF(filename=submission.url)
+                    #case to catch all other items
+                    else:
+                         m = "NOT IMAGE - "+submission.title+" "+submission.url+" "+submission.domain
                          writeLog(message=m,type="WARNING")
                          continue
-                    ydl_opts = {
-                         'format':'best',
-                         'outtmpl': filename,
-                         'cachedir': False,
-                         'force_generic_extractor': (submission.domain in videoDomains or submission.domain in gifDomains),
-                         'quiet':(loggingLevel <= 2),
-                         'no_warnings': (loggingLevel < 2)
-                    }
-                    print(bcolors.OKBLUE,end="")
-                    try:
-                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                              ydl.download([submission.url])
-                    except:
-                         writeLog(message="failed to download video - "+submission.url+" "+submission.domain,type="ERROR")
-                    print(bcolors.ENDC,end="")
-                    continue
-
-               if "gallery" in submission.url and submission.domain == "reddit.com":
-                    getGallery(submission.id,submission.url,submission.author,userpath)
-                    continue
-
-               #standard image grab
-               if(not submission.is_self and submission.domain in imageDomains):
-                    m="getting ["+user.name+"] "+submission.title+" "+submission.url
-                    writeLog(message=m,type="INFO")
-                    getImage(filename=submission.url)
-               #gif grab
-               elif(not submission.is_self and submission.domain in gifDomains):
-                    m="getting ["+user.name+"] "+submission.title+" "+submission.url+" "+submission.domain
-                    writeLog(message=m,type="INFO")
-                    getGIF(filename=submission.url)
-               #case to catch all other items
-               else:
-                    m = "NOT IMAGE - "+submission.title+" "+submission.url+" "+submission.domain
-                    writeLog(message=m,type="WARNING")
-                    continue
+          except:
+               m = "User "+user.name+" failed to be processed"
+               writeLog(m,"ERROR")
 
 if not subredSkip:
      #loop through all subreddits to pull content
