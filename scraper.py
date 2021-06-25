@@ -95,6 +95,9 @@ def getGallery(_id,_url,_author,_out):
      else:
           if(r.status_code == 429):
                writeLog(message=f"Error means TOO MANY REQUESTS [{r.status_code}]",type="ERROR")
+               writeLog("Pausing for 15 seconds before tring again","INFO")
+               time.sleep(15)
+               getGallery(_id,_url,_author,_out)
           else:
                m="query for "+_url+" couldn't be processed... CODE "+str(r.status_code)
                writeLog(message=m,type="ERROR")
