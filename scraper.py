@@ -50,7 +50,7 @@ def getImage(filename):
      try:
           filename = submission.url.split("/")[-1]
           filename = filename.replace("?","")
-          filename = userpath+str(subcount)+"-"+user.name+"-"+filename
+          filename = userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename 
           #check if file exists - do not overwrite if it does
           if  os.path.exists(filename):
                m="File already exists -"+filename
@@ -75,7 +75,11 @@ def getImage(filename):
 
 def getGIF(filename):
      #print("in getGIF")
-     return
+     lastSlashIndex = filename.rfind("/")
+     newFilename = filename[:lastSlashIndex]+filename.split("/")[-1].split(".")[0] + ".mp4"
+     m="changed <"+filename+"> to <"+newFilename+">"
+     writeLog(message=m,type="INFO")
+     getImage(filename=newFilename)
 
 def getGIFV(filename):
      #print("in getGIFV")
@@ -110,7 +114,6 @@ def getGallery(_id,_url,_author,_out):
                if("gallery" in i["url"].split("/")):
                     try:
                          for j in i["media_metadata"]:
-                              
                               with open(scriptdir+"/local/out.json","w") as jsonFile:
                                    json.dump(i["media_metadata"][j],jsonFile)
                               imgID = i["media_metadata"][j]["id"]
@@ -139,7 +142,7 @@ def getSubredditImage(_fname):
      #build filename for local write
      filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
-     filename = subpath+str(subcount)+"-"+subname+"-"+filename
+     filename = subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
           m="File already exists -"+filename
@@ -163,7 +166,11 @@ def getSubredditImage(_fname):
 #subreddit specific
 def getSubredditGIF(filename):
      #print("in getSubredditGIF")
-     return
+     lastSlashIndex = filename.rfind("/")
+     newFilename = filename[:lastSlashIndex]+"/"+filename.split("/")[-1].split(".")[0] + ".mp4"
+     m="changed <"+filename+"> to <"+newFilename+">"
+     writeLog(message=m,type="INFO")
+     getSubredditImage(newFilename)
 
 def getSubredditGIFV(filename):
      #print("in getSubredditSubredditGIFV")
