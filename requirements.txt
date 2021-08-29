@@ -1,6 +1,6 @@
-instaloader==4.7.1
-praw==7.2.0
-prawcore==2.0.0
-tweepy==3.10.0
-wget==3.2
-youtube-dl==2021.4.17
+instaloader>=4.7.1
+praw>=7.2.0
+prawcore>=2.0.0
+tweepy>=3.10.0
+wget>=3.2
+youtube-dl>=2021.4.17

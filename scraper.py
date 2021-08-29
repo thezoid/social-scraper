@@ -50,7 +50,7 @@ def getImage(filename):
      try:
           filename = submission.url.split("/")[-1]
           filename = filename.replace("?","")
-          filename = userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename 
+          filename = userpath+"reddi/"+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+"reddit/"+user.name+"-"+filename 
           #check if file exists - do not overwrite if it does
           if  os.path.exists(filename):
                m="File already exists -"+filename
@@ -63,10 +63,13 @@ def getImage(filename):
                # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
                r.raw.decode_content = True
                # Open a local file with wb ( write binary ) permission.
-               with open(filename,'wb') as f:
-                    shutil.copyfileobj(r.raw, f)
-               m="Image sucessfully Downloaded: "+filename
-               writeLog(message=m,type="INFO")
+               try:
+                    with open(filename,'wb') as f:
+                         shutil.copyfileobj(r.raw, f)
+                    m="Image sucessfully Downloaded: "+filename
+                    writeLog(message=m,type="INFO")
+               except:
+                    writeLog(f"Failed to pull back file {filename}","ERROR")
           else:
                m="Image Couldn\'t be retreived: "+submission.url+" CODE: "+str(r.status_code)
                writeLog(message=m,type="ERROR")
@@ -142,7 +145,7 @@ def getSubredditImage(_fname):
      #build filename for local write
      filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
-     filename = subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
+     filename = subpath+"reddit/"+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+"reddit/"+subname+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
           m="File already exists -"+filename
@@ -296,7 +299,7 @@ if not redditorSkip:
                writeLog(message=m,type="ERROR")
                continue
           #setup path to write files to
-          userpath = rootPath+user.name+"/"
+          userpath = rootPath+user.name+"/reddit"
           m="writing this user content to - "+userpath
           writeLog(message=m,type="INFO")
           #create base path per username scraped
@@ -341,7 +344,7 @@ if not redditorSkip:
                          writeLog(message=m,type="INFO")
                          filename = submission.url.split("/")[-1]
                          filename = filename.replace("?","")
-                         filename =  userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename
+                         filename =  userpath+"reddit/"+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+"reddit/"+user.name+"-"+filename
                          if  os.path.exists(filename):
                               m="File already exists -"+filename
                               writeLog(message=m,type="WARNING")
@@ -401,7 +404,7 @@ if not subredSkip:
                writeLog(message=m,type="ERROR")
                continue
           #setup path to write files to
-          subpath = rootPath+subname+"/"
+          subpath = rootPath+subname+"/reddit"
           m="writing this subreddit content to - "+subpath
           writeLog(message=m,type="INFO")
           #create base path per username scraped
@@ -440,7 +443,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     filename = url.split("/")[-1]
                     filename = filename.replace("?","")
-                    filename =  subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
+                    filename =  subpath+"reddit/"+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+"reddit/"+subname+"-"+filename
                     if  os.path.exists(filename):
                          m="File already exists -"+filename
                          writeLog(message=m,type="WARNING")
@@ -479,13 +482,13 @@ if not subredSkip:
                #case to catch all other items
                else:
                     m = "NOT IMAGE - "+submission["title"]+" "+url+" "+submission["domain"]
-                    writeLog(message=m,type="WARNING")
+                    writeLog(message=m,type="WARNIN G")
                     continue
 
 if not instaSkip:
      #loop through all insta profiles to scrape content
      for profile in instaList:
-          userpath = rootPath+profile+"/"
+          userpath = rootPath+profile+"/instagram/"
           m="writing this user content to - "+userpath
           writeLog(message=m,type="INFO")
           #create base path per username scraped
@@ -503,7 +506,7 @@ if not instaSkip:
           except:
                m="exception thrown when processing "+profile
                writeLog(message=m, type="ERROR")
-          writeLog(f"({str(instaRetryBuffer)}m) Waiting between Instagram accounts...","INFO")
+          writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
           time.sleep(instaRetryBuffer)
 
 if not twitSkip:
@@ -517,7 +520,7 @@ if not twitSkip:
      auth = tweepy.AppAuthHandler(twit_consKey, twit_consSec)
      twitter = tweepy.API(auth)
      for user in twitUserList:
-          twitUserpath = rootPath+user+"/"
+          twitUserpath = rootPath+user+"/twitter"
           m="writing this twitter user content to - "+twitUserpath
           writeLog(message=m,type="INFO")
           try:
@@ -558,7 +561,7 @@ if not twitSkip:
                #build filename for local write
                filename = mediaFile.split("/")[-1]
                filename = filename.replace("?","")
-               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+user+"-"+filename 
+               filename = twitUserpath+"twitter/"+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+"twitter/"+user+"-"+filename 
                #check if file exists - do not overwrite if it does
                if  os.path.exists(filename):
                     m="File already exists -"+filename
