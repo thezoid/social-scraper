@@ -11,6 +11,8 @@
      "twit_bearerTok":"your twitter app bearer token",
      "destination":"the root path to download to",
      "loggingLevel":1,
+     "prependCount":false,
+     "instaRetryBuffer":900,
      "imageDomains": [
           "i.redd.it",
           "i.imgur.com"

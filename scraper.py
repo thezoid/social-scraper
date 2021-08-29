@@ -249,6 +249,10 @@ if loggingLevel > 3:
 if loggingLevel < 0:
      loggingLevel = 0
 instaList = settings["instaList"] #list of insta accounts to scrape
+instaRetryBuffer = settings["instaRetryBuffer"]
+if instaRetryBuffer < 0:
+     instaRetryBuffer = 900
+prependCount = settings["prependCount"]
 twitList = settings["twitterList"]
 subredSkip = settings["subRedditSkip"] #skip subreddit scrapes?
 redditorSkip = settings["redditorSkip"] #skip redditor scrapes?
@@ -330,7 +334,7 @@ if not redditorSkip:
                          writeLog(message=m,type="INFO")
                          filename = submission.url.split("/")[-1]
                          filename = filename.replace("?","")
-                         filename = userpath+str(subcount)+"-"+user.name+"-"+filename
+                         filename =  userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename
                          if  os.path.exists(filename):
                               m="File already exists -"+filename
                               writeLog(message=m,type="WARNING")
@@ -429,7 +433,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     filename = url.split("/")[-1]
                     filename = filename.replace("?","")
-                    filename = subpath+str(subcount)+"-"+subname+"-"+filename
+                    filename =  subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
                     if  os.path.exists(filename):
                          m="File already exists -"+filename
                          writeLog(message=m,type="WARNING")
@@ -492,9 +496,8 @@ if not instaSkip:
           except:
                m="exception thrown when processing "+profile
                writeLog(message=m, type="ERROR")
-          # waitTime = 15*60
-          # writeLog(f"({waitTime}m)Waiting between Instagram accounts...","INFO")
-          # time.sleep(waitTime)
+          writeLog(f"({str(instaRetryBuffer)}m) Waiting between Instagram accounts...","INFO")
+          time.sleep(instaRetryBuffer)
 
 if not twitSkip:
      # Status() is the data model for a tweet
@@ -548,7 +551,7 @@ if not twitSkip:
                #build filename for local write
                filename = mediaFile.split("/")[-1]
                filename = filename.replace("?","")
-               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename
+               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+user+"-"+filename 
                #check if file exists - do not overwrite if it does
                if  os.path.exists(filename):
                     m="File already exists -"+filename
