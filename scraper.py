@@ -538,20 +538,20 @@ if not twitSkip:
                #build filename for local write
                filename = mediaFile.split("/")[-1]
                filename = filename.replace("?","")
-               filename = twitUserpath+"twitter/"+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+"twitter/"+user+"-"+filename 
+               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+user+"-"+filename 
                #check if file exists - do not overwrite if it does
                if  os.path.exists(filename):
                     m="File already exists -"+filename
                     writeLog(message=m,type="WARNING")
                     continue
                try:
-                    writeLog(f"\n[{user}] Attempting to download {mediaFile}\n{sys.last_value}","INFO")
+                    writeLog(f"\n[{user}] Attempting to download {mediaFile}","INFO")
                     wget.download(mediaFile,out=filename)
+                    print() #try to fix weird same line issue with wget output
                     captured+=1
                except:
-                    writeLog(f"\nFailed to download {mediaFile}","ERROR")
+                    writeLog(f"\nFailed to download {mediaFile} to {filename}\n{sys.exc_info()[0]}","ERROR")
 
-print() #try to fix weird same line issue with wget output
 
 if not instaSkip:
      #loop through all insta profiles to scrape content
