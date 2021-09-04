@@ -11,6 +11,7 @@ import praw
 import instaloader
 import youtube_dl
 import tweepy
+import sys
 
 #text colors
 class bcolors:
@@ -50,7 +51,7 @@ def getImage(filename):
      try:
           filename = submission.url.split("/")[-1]
           filename = filename.replace("?","")
-          filename = userpath+"reddi/"+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+"reddit/"+user.name+"-"+filename 
+          filename = userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename 
           #check if file exists - do not overwrite if it does
           if  os.path.exists(filename):
                m="File already exists -"+filename
@@ -145,7 +146,7 @@ def getSubredditImage(_fname):
      #build filename for local write
      filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
-     filename = subpath+"reddit/"+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+"reddit/"+subname+"-"+filename
+     filename = subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
           m="File already exists -"+filename
@@ -190,7 +191,7 @@ def getSubredditGallery(filename):
 
 #prep data from settings json
 def processScrapeList(_scrapeList, _userList, _subList, _instaList,_instaAccountList,_twitList,_twitterUsersList,_subredSkip,_redditorSkip,_instaSkip,_twitSkip):
-     if not _redditorSkip and not _subredSkip:
+     if not _redditorSkip or not _subredSkip:
           for item in _scrapeList:
                if item.split("/")[0] == 'r' and not item.split("/")[1] in _subList and not _subredSkip:
                     m="[Subreddit] processing new sub: "+item
@@ -299,7 +300,7 @@ if not redditorSkip:
                writeLog(message=m,type="ERROR")
                continue
           #setup path to write files to
-          userpath = rootPath+user.name+"/reddit"
+          userpath = rootPath+user.name+"/reddit/"
           m="writing this user content to - "+userpath
           writeLog(message=m,type="INFO")
           #create base path per username scraped
@@ -344,7 +345,7 @@ if not redditorSkip:
                          writeLog(message=m,type="INFO")
                          filename = submission.url.split("/")[-1]
                          filename = filename.replace("?","")
-                         filename =  userpath+"reddit/"+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+"reddit/"+user.name+"-"+filename
+                         filename =  userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename
                          if  os.path.exists(filename):
                               m="File already exists -"+filename
                               writeLog(message=m,type="WARNING")
@@ -404,7 +405,7 @@ if not subredSkip:
                writeLog(message=m,type="ERROR")
                continue
           #setup path to write files to
-          subpath = rootPath+subname+"/reddit"
+          subpath = rootPath+subname+"/reddit/"
           m="writing this subreddit content to - "+subpath
           writeLog(message=m,type="INFO")
           #create base path per username scraped
@@ -443,7 +444,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     filename = url.split("/")[-1]
                     filename = filename.replace("?","")
-                    filename =  subpath+"reddit/"+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+"reddit/"+subname+"-"+filename
+                    filename =  subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
                     if  os.path.exists(filename):
                          m="File already exists -"+filename
                          writeLog(message=m,type="WARNING")
@@ -485,30 +486,6 @@ if not subredSkip:
                     writeLog(message=m,type="WARNIN G")
                     continue
 
-if not instaSkip:
-     #loop through all insta profiles to scrape content
-     for profile in instaList:
-          userpath = rootPath+profile+"/instagram/"
-          m="writing this user content to - "+userpath
-          writeLog(message=m,type="INFO")
-          #create base path per username scraped
-          try:
-               os.makedirs(os.path.dirname(userpath), exist_ok=True)
-          except:
-               m = "Failed to create directory: "+userpath
-               writeLog(message=m,type="ERROR")
-               continue
-          mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
-          m="Attempting to download "+profile
-          writeLog(message=m,type="INFO")
-          try:
-               mod.download_profile(profile)
-          except:
-               m="exception thrown when processing "+profile
-               writeLog(message=m, type="ERROR")
-          writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
-          time.sleep(instaRetryBuffer)
-
 if not twitSkip:
      # Status() is the data model for a tweet
      tweepy.models.Status.first_parse = tweepy.models.Status.parse
@@ -520,7 +497,7 @@ if not twitSkip:
      auth = tweepy.AppAuthHandler(twit_consKey, twit_consSec)
      twitter = tweepy.API(auth)
      for user in twitUserList:
-          twitUserpath = rootPath+user+"/twitter"
+          twitUserpath = rootPath+user+"/twitter/"
           m="writing this twitter user content to - "+twitUserpath
           writeLog(message=m,type="INFO")
           try:
@@ -568,7 +545,7 @@ if not twitSkip:
                     writeLog(message=m,type="WARNING")
                     continue
                try:
-                    writeLog(f"\n[{user}] Attempting to download {mediaFile}","INFO")
+                    writeLog(f"\n[{user}] Attempting to download {mediaFile}\n{sys.last_value}","INFO")
                     wget.download(mediaFile,out=filename)
                     captured+=1
                except:
@@ -576,7 +553,31 @@ if not twitSkip:
 
 print() #try to fix weird same line issue with wget output
 
-m=("\033[1;32;40mDownloaded: "+str(captured)+"\nRedditors: "+str(len(userList))+"\nSubreddits: "+str(len(subList))+"\nInsta Accounts: "+str(len(instaList))+"\nTwitter Accounts: "+str(len(twitUserList))+"\nTweets seen: "+str(tweetsSeen)+"\nDuration: "+str(datetime.timedelta(seconds=math.floor((datetime.datetime.now() - startTime).total_seconds()))))
+if not instaSkip:
+     #loop through all insta profiles to scrape content
+     for profile in instaList:
+          userpath = rootPath+profile+"/instagram/"
+          m="writing this user content to - "+userpath
+          writeLog(message=m,type="INFO")
+          #create base path per username scraped
+          try:
+               os.makedirs(os.path.dirname(userpath), exist_ok=True)
+          except:
+               m = "Failed to create directory: "+userpath
+               writeLog(message=m,type="ERROR")
+               continue
+          mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
+          m="Attempting to download "+profile
+          writeLog(message=m,type="INFO")
+          try:
+               mod.download_profile(profile)
+          except:
+               m="exception thrown when processing "+profile
+               writeLog(message=m, type="ERROR")
+          writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
+          time.sleep(instaRetryBuffer)
+
+m=("\033[1;32;40mDownloaded: "+str(captured)+"\nRedditors: "+str(len(userList))+"\nSubreddits: "+str(len(subList))+"\nInsta Accounts: "+str(len(instaAccounts))+"\nTwitter Accounts: "+str(len(twitUserList))+"\nTweets seen: "+str(tweetsSeen)+"\nDuration: "+str(datetime.timedelta(seconds=math.floor((datetime.datetime.now() - startTime).total_seconds()))))
 if loggingLevel >=2:
      m+="\nWarnings:"+str(warnings)
 if loggingLevel >=1:
