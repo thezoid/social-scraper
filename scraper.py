@@ -509,7 +509,10 @@ if not twitSkip:
 
           #get all tweets
           allTweets = []
-          newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
+          try:
+               newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
+          except:
+               writeLog(f"Failed to get Tweets for {user}","ERROR")
           allTweets.extend(newTweets)
           count=0
           while len(newTweets) > 0:
