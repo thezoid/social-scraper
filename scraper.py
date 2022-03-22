@@ -77,7 +77,7 @@ def getImage(filename):
                r.raw.decode_content = True
                # Open a local file with wb ( write binary ) permission.
                try:
-                    with open(filename,'wb',encoding="utf-8") as f:
+                    with open(filename,'wb') as f:
                          shutil.copyfileobj(r.raw, f)
                     m="Image sucessfully Downloaded: "+filename
                     writeLog(message=m,type="INFO")
@@ -171,7 +171,7 @@ def getSubredditImage(_fname):
           # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
           r.raw.decode_content = True
           # Open a local file with wb ( write binary ) permission.
-          with open(filename,'wb',encoding="utf-8") as f:
+          with open(filename,'wb') as f:
                shutil.copyfileobj(r.raw, f)
           m="Image sucessfully Downloaded: "+filename
           writeLog(message=m,type="INFO")
