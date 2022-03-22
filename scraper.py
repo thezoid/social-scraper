@@ -26,19 +26,31 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 #------ start funcs
-def writeLog(message, type):
+def writeLog(message, type, writeTofile=True):
      if loggingLevel == 0:
           return
      if type.upper() == "ERROR" and loggingLevel >= 1:
-          print(bcolors.FAIL,"ERROR:",message,bcolors.ENDC)
+          print(bcolors.FAIL,f"!!![{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}",bcolors.ENDC)
+          if writeTofile:
+               _scriptdir = os.path.dirname(os.path.realpath(__file__))
+               with open(os.path.join(_scriptdir,f"logs/{datetime.datetime.today().strftime('%Y%B%d')}scraper.log"),"a",encoding="utf-8") as logFile:
+                    logFile.write(f"!!![{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}\n")
           global errors
           errors+=1
      elif type.upper() == "WARNING" and loggingLevel >= 2:
-          print(bcolors.WARNING,"WARNING:",message,bcolors.ENDC)
+          print(bcolors.WARNING,f"![{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}",bcolors.ENDC)
+          if writeTofile:
+               _scriptdir = os.path.dirname(os.path.realpath(__file__))
+               with open(os.path.join(_scriptdir,f"logs/{datetime.datetime.today().strftime('%Y%B%d')}scraper.log"),"a",encoding="utf-8") as logFile:
+                    logFile.write(f"![{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}\n")
           global warnings
           warnings+=1
      elif type.upper() == "INFO" and loggingLevel >= 3:
-          print("\033[1;37;40mINFO:",message,bcolors.ENDC)
+          print("\033[1;37;40m",f"*[{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}",bcolors.ENDC)
+          if writeTofile:
+               _scriptdir = os.path.dirname(os.path.realpath(__file__))
+               with open(os.path.join(_scriptdir,f"logs/{datetime.datetime.today().strftime('%Y%B%d')}scraper.log"),"a",encoding="utf-8") as logFile:
+                    logFile.write(f"*[{datetime.datetime.today().strftime('%Y%B%d@%H:%M:%S')}] {message}\n")
 
 #user specific
 def getImage(filename):
@@ -65,17 +77,17 @@ def getImage(filename):
                r.raw.decode_content = True
                # Open a local file with wb ( write binary ) permission.
                try:
-                    with open(filename,'wb') as f:
+                    with open(filename,'wb',encoding="utf-8") as f:
                          shutil.copyfileobj(r.raw, f)
                     m="Image sucessfully Downloaded: "+filename
                     writeLog(message=m,type="INFO")
-               except:
-                    writeLog(f"Failed to pull back file {filename}","ERROR")
+               except Exception as err:
+                    writeLog(f"Failed to pull back file {filename}"+"\n{0}".format(err),"ERROR")
           else:
                m="Image Couldn\'t be retreived: "+submission.url+" CODE: "+str(r.status_code)
                writeLog(message=m,type="ERROR")
-     except:
-          writeLog(f"Failed to get {filename}","ERROR")
+     except Exception as err:
+          writeLog(f"Failed to get {filename}"+"\n{0}".format(err),"ERROR")
 
 def getGIF(filename):
      #print("in getGIF")
@@ -112,13 +124,13 @@ def getGallery(_id,_url,_author,_out):
           return
      for i in data["data"]:
           global scriptdir
-          with open(scriptdir+"/local/out.json","w") as jsonFile:
+          with open(scriptdir+"/local/out.json","w",encoding="utf-8") as jsonFile:
                json.dump(i,jsonFile)
           if i["url"]:
                if("gallery" in i["url"].split("/")):
                     try:
                          for j in i["media_metadata"]:
-                              with open(scriptdir+"/local/out.json","w") as jsonFile:
+                              with open(scriptdir+"/local/out.json","w",encoding="utf-8") as jsonFile:
                                    json.dump(i["media_metadata"][j],jsonFile)
                               imgID = i["media_metadata"][j]["id"]
                               imgExt = i["media_metadata"][j]["m"].split("/")[1]
@@ -131,10 +143,10 @@ def getGallery(_id,_url,_author,_out):
                               try:
                                    writeLog(f"\n[{user}] Attempting to download {link} to {_out}","INFO")
                                    wget.download(link,out=filename)
-                              except:
-                                   writeLog(f"\nFailed to download {link}","ERROR")
-                    except:
-                         writeLog(f"\nFailed to to get 'media_metadata' key","ERROR")
+                              except Exception as err:
+                                   writeLog(f"\nFailed to download {link}"+"\n{0}".format(err),"ERROR")
+                    except Exception as err:
+                         writeLog(f"\nFailed to to get 'media_metadata' key"+"\n{0}".format(err),"ERROR")
                     
 
 def getSubredditImage(_fname):
@@ -159,7 +171,7 @@ def getSubredditImage(_fname):
           # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
           r.raw.decode_content = True
           # Open a local file with wb ( write binary ) permission.
-          with open(filename,'wb') as f:
+          with open(filename,'wb',encoding="utf-8") as f:
                shutil.copyfileobj(r.raw, f)
           m="Image sucessfully Downloaded: "+filename
           writeLog(message=m,type="INFO")
@@ -240,7 +252,7 @@ startTime = datetime.datetime.now()
 os.system('color')
 scriptdir = os.path.dirname(os.path.realpath(__file__))
 #read ./settings.json
-with open(scriptdir+"/dev.settings.json") as settingsFile: #!!!CHANGE THIS BACK TO DEFAULT TO settings.json!!!
+with open(scriptdir+"/dev.settings.json",encoding="utf-8") as settingsFile: #!!!CHANGE THIS BACK TO DEFAULT TO settings.json!!!
      settings = json.load(settingsFile)     
 
 red_clientID = settings["red_clientID"] #reddit app client id for praw
@@ -295,8 +307,8 @@ if not redditorSkip:
                user = reddit.redditor(username)
                m="getting user "+user.name
                writeLog(message=m,type="INFO")
-          except:
-               m="Failed to get user: "+username
+          except Exception as err:
+               m="Failed to get user: "+username+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
           #setup path to write files to
@@ -306,15 +318,15 @@ if not redditorSkip:
           #create base path per username scraped
           try:
                os.makedirs(os.path.dirname(userpath), exist_ok=True)
-          except:
-               m = "Failed to create directory: "+userpath
+          except Exception as err:
+               m = "Failed to create directory: "+userpath+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
           #try to get all submissions from a user
           try:
                submissions = user.submissions.top("all")
-          except:
-               m="couldnt get top submissions - "+user.name
+          except Exception as err:
+               m="couldnt get top submissions - "+user.name+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
           subcount = 0
@@ -362,8 +374,8 @@ if not redditorSkip:
                          try:
                               with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                                    ydl.download([submission.url])
-                         except:
-                              writeLog(message="failed to download video - "+submission.url+" "+submission.domain,type="ERROR")
+                         except Exception as err:
+                              writeLog(message="failed to download video - "+submission.url+" "+submission.domain+"\n{0}".format(err),type="ERROR")
                          print(bcolors.ENDC,end="")
                          continue
 
@@ -386,8 +398,8 @@ if not redditorSkip:
                          m = "NOT IMAGE - "+submission.title+" "+submission.url+" "+submission.domain
                          writeLog(message=m,type="WARNING")
                          continue
-          except:
-               m = "User "+user.name+" failed to be processed"
+          except Exception as err:
+               m = "User "+user.name+" failed to be processed"+"\n{0}".format(err)
                writeLog(m,"ERROR")
 
 if not subredSkip:
@@ -411,8 +423,8 @@ if not subredSkip:
           #create base path per username scraped
           try:
                os.makedirs(os.path.dirname(subpath), exist_ok=True)
-          except:
-               m = "Failed to create directory: "+subpath
+          except Exception as err:
+               m = "Failed to create directory: "+subpath+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
           #try to get all submissions from a user
@@ -461,8 +473,8 @@ if not subredSkip:
                     try:
                          with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                               ydl.download([url])
-                    except:
-                         writeLog(message="failed to download video - "+url+" "+submission["domain"],type="ERROR")
+                    except Exception as err:
+                         writeLog(message="failed to download video - "+url+" "+submission["domain"]+"\n{0}".format(err),type="ERROR")
                     print(bcolors.ENDC,end="")
                     continue
 
@@ -502,8 +514,8 @@ if not twitSkip:
           writeLog(message=m,type="INFO")
           try:
                os.makedirs(os.path.dirname(twitUserpath), exist_ok=True)
-          except:
-               m = "Failed to create directory: "+twitUserpath
+          except Exception as err:
+               m = "Failed to create directory: "+twitUserpath+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
 
@@ -511,8 +523,8 @@ if not twitSkip:
           allTweets = []
           try:
                newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
-          except:
-               writeLog(f"Failed to get Tweets for {user}","ERROR")
+          except Exception as err:
+               writeLog(f"Failed to get Tweets for {user}"+"\n{0}".format(err),"ERROR")
           allTweets.extend(newTweets)
           count=0
           while len(newTweets) > 0:
@@ -529,7 +541,7 @@ if not twitSkip:
                     if len(tweetAsJSON["entities"]["media"]) > 0:
                          for m in tweetAsJSON["entities"]["media"]:
                               mediaFiles.append(m["media_url"])
-               except:
+               except Exception as err:
                     twtID = tweetAsJSON["id"]
                     twtLink = f"https://twitter.com/{user}/status/{twtID}"
                     writeLog(f"Tweet (ID: {twtID} | Link: {twtLink}) didn't have a media entity key","WARNING")
@@ -552,8 +564,8 @@ if not twitSkip:
                     wget.download(mediaFile,out=filename)
                     print() #try to fix weird same line issue with wget output
                     captured+=1
-               except:
-                    writeLog(f"\nFailed to download {mediaFile} to {filename}\n{sys.exc_info()[0]}","ERROR")
+               except Exception as err:
+                    writeLog(f"\nFailed to download {mediaFile} to {filename}\n{sys.exc_info()[0]}"+"\n{0}".format(err),"ERROR")
 
 
 if not instaSkip:
@@ -565,8 +577,8 @@ if not instaSkip:
           #create base path per username scraped
           try:
                os.makedirs(os.path.dirname(userpath), exist_ok=True)
-          except:
-               m = "Failed to create directory: "+userpath
+          except Exception as err:
+               m = "Failed to create directory: "+userpath+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
                continue
           mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
@@ -574,8 +586,8 @@ if not instaSkip:
           writeLog(message=m,type="INFO")
           try:
                mod.download_profile(profile)
-          except:
-               m="exception thrown when processing "+profile
+          except Exception as err:
+               m="except Exception as errion thrown when processing "+profile+"\n{0}".format(err)
                writeLog(message=m, type="ERROR")
           writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
           time.sleep(instaRetryBuffer)

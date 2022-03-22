@@ -1,3 +1,4 @@
 /local/*
 dev*
 .DS_Store
+/logs
