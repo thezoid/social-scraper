@@ -444,7 +444,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     filename = url.split("/")[-1]
                     filename = filename.replace("?","")
-                    filename =  subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
+                    filename =  subpath+str(subcount)+"-"+subname+"-"+submission["author"]+"-"+filename if prependCount else subpath+subname+"-"+filename
                     if  os.path.exists(filename):
                          m="File already exists -"+filename
                          writeLog(message=m,type="WARNING")
