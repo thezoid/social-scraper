@@ -158,7 +158,7 @@ def getSubredditImage(_fname):
      #build filename for local write
      filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
-     filename = subpath+str(subcount)+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
+     filename = subpath+str(subcount)+"-"+submission["author"]+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
           m="File already exists -"+filename
