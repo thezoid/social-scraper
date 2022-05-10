@@ -158,7 +158,7 @@ def getSubredditImage(_fname):
      #build filename for local write
      filename = _fname.split("/")[-1]
      filename = filename.replace("?","")
-     filename = subpath+str(subcount)+"-"+submission["author"]+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+filename
+     filename = subpath+str(subcount)+"-"+submission["author"]+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+submission["author"]+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
           m="File already exists -"+filename
@@ -324,7 +324,7 @@ if not redditorSkip:
                continue
           #try to get all submissions from a user
           try:
-               submissions = user.submissions.top("all")
+               submissions = user.submissions.top("all",limit=None)
           except Exception as err:
                m="couldnt get top submissions - "+user.name+"\n{0}".format(err)
                writeLog(message=m,type="ERROR")
@@ -406,16 +406,43 @@ if not subredSkip:
      #loop through all subreddits to pull content
      #takes advantage of pushshift api
      for subname in subList:
-          query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+str(round(time.time()))+"&size=1000"
+          allPosts = []
+          timeSentinel = str(round(time.time()))
+          #first batch
+          query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+timeSentinel+"&size=100"
           m="requesting "+query
           writeLog(message=m, type="INFO")
           r = requests.get(query, stream = True)
           if r.status_code == 200:
                data = r.json()
+               allPosts += data.get("data")
           else:
                m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
                writeLog(message=m,type="ERROR")
                continue
+          #get other posts
+          while len(data.get("data")) > 0:
+               timeSentinel = str(allPosts[-1].get("created_utc"))
+               query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+timeSentinel+"&size=100"
+               m="requesting "+query
+               writeLog(message=m, type="INFO")
+               r = requests.get(query, stream = True)
+               if r.status_code == 200:
+                    data = r.json()
+                    allPosts += data.get("data")
+               elif r.status_code == 429:
+                    while r.status_code == 429:
+                         writeLog(f"got 429 - pause for rate limiting","error")
+                         time.sleep(60)
+                         r = requests.get(query, stream = True)
+                         data = r.json()
+                         allPosts += data.get("data")
+               else:
+                    m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
+                    writeLog(message=m,type="ERROR")
+                    continue
+               writeLog("len of data was "+str(len(data.get("data"))),"info")
+               writeLog("len of allPosts was "+str(len(allPosts)),"info")
           #setup path to write files to
           subpath = rootPath+subname+"/reddit/"
           m="writing this subreddit content to - "+subpath
@@ -429,7 +456,7 @@ if not subredSkip:
                continue
           #try to get all submissions from a user
           subcount = 0
-          for submission in data.get("data"):
+          for submission in allPosts:
                captured+=1
                subcount+= 1
                url = submission["url"]
@@ -456,7 +483,7 @@ if not subredSkip:
                     writeLog(message=m,type="INFO")
                     filename = url.split("/")[-1]
                     filename = filename.replace("?","")
-                    filename =  subpath+str(subcount)+"-"+subname+"-"+submission["author"]+"-"+filename if prependCount else subpath+subname+"-"+filename
+                    filename =  subpath+str(subcount)+"-"+subname+"-"+submission["author"]+"-"+filename if prependCount else subpath+subname+"-"+submission["author"]+"-"+filename
                     if  os.path.exists(filename):
                          m="File already exists -"+filename
                          writeLog(message=m,type="WARNING")
