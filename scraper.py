@@ -1,3 +1,4 @@
+from cmath import log
 import math
 import requests
 import wget
@@ -62,7 +63,7 @@ def getImage(filename):
      #build filename for local write
      try:
           filename = submission.url.split("/")[-1]
-          filename = filename.replace("?","")
+          filename = filename.replace("?","").replace("\\","").replace("/","").replace("#","").replace("%","").replace("&","").replace("<","").replace(">","").replace("*","").replace("$","").replace("!","").replace("'","").replace("\"","").replace(":","").replace(";","").replace("+","").replace("`","").replace("|","").replace("=","")
           filename = userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename 
           #check if file exists - do not overwrite if it does
           if  os.path.exists(filename):
@@ -70,7 +71,11 @@ def getImage(filename):
                writeLog(message=m,type="WARNING")
                return
           # Open the url image, set stream to True, this will return the stream content.
-          r = requests.get(submission.url, stream = True)
+          try:
+               r = requests.get(submission.url, stream = True)
+          except Exception as e:
+               writeLog(f"request failed to get image\n{e}","error")
+               return
           # Check if the image was retrieved successfully
           if r.status_code == 200:
                # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
@@ -153,11 +158,11 @@ def getSubredditImage(_fname):
      #print("in getSubredditImage")
      #catch gifv links to get special parsing
      if _fname.split(".")[-1] == "gifv":
-          getGIFV(filename=_fname)
+          getSubredditGIFV(filename=_fname)
           return
      #build filename for local write
      filename = _fname.split("/")[-1]
-     filename = filename.replace("?","")
+     filename = filename.replace("?","").replace("\\","").replace("/","").replace("#","").replace("%","").replace("&","").replace("<","").replace(">","").replace("*","").replace("$","").replace("!","").replace("'","").replace("\"","").replace(":","").replace(";","").replace("+","").replace("`","").replace("|","").replace("=","")
      filename = subpath+str(subcount)+"-"+submission["author"]+"-"+subname+"-"+filename if prependCount else subpath+subname+"-"+submission["author"]+"-"+filename
      #check if file exists - do not overwrite if it does
      if  os.path.exists(filename):
@@ -165,7 +170,11 @@ def getSubredditImage(_fname):
           writeLog(message=m,type="WARNING")
           return
      # Open the url image, set stream to True, this will return the stream content.
-     r = requests.get(url, stream = True)
+     try:
+          r = requests.get(url, stream = True)
+     except:
+          writeLog(f"request failed to get subreddit image","error")
+          return
      # Check if the image was retrieved successfully
      if r.status_code == 200:
           # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
@@ -261,6 +270,7 @@ red_userAgent = settings["red_agentName"] #reddit app user agent name for praw
 twit_consKey= settings["twit_consKey"]
 twit_consSec= settings["twit_consSec"]
 twit_bearTok = settings["twit_bearerTok"]
+fullsubscrape = settings["fullsubscrape"]
 scrapeList = settings["scrapeList"] #raw scrape list for reddit accounts/subs
 imageDomains = settings["imageDomains"] #whitelist of domains to pull images from
 gifDomains = settings["gifDomains"] #whitelist of domains to pull gifs from
@@ -356,7 +366,7 @@ if not redditorSkip:
                          m="getting ["+user.name+"] "+submission.title+" "+submission.url
                          writeLog(message=m,type="INFO")
                          filename = submission.url.split("/")[-1]
-                         filename = filename.replace("?","")
+                         filename = filename.replace("?","").replace("\\","").replace("/","").replace("#","").replace("%","").replace("&","").replace("<","").replace(">","").replace("*","").replace("$","").replace("!","").replace("'","").replace("\"","").replace(":","").replace(";","").replace("+","").replace("`","").replace("|","").replace("=","")
                          filename =  userpath+str(subcount)+"-"+user.name+"-"+filename if prependCount else userpath+user.name+"-"+filename
                          if  os.path.exists(filename):
                               m="File already exists -"+filename
@@ -421,28 +431,32 @@ if not subredSkip:
                writeLog(message=m,type="ERROR")
                continue
           #get other posts
-          while len(data.get("data")) > 0:
-               timeSentinel = str(allPosts[-1].get("created_utc"))
-               query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+timeSentinel+"&size=100"
-               m="requesting "+query
-               writeLog(message=m, type="INFO")
-               r = requests.get(query, stream = True)
-               if r.status_code == 200:
-                    data = r.json()
-                    allPosts += data.get("data")
-               elif r.status_code == 429:
-                    while r.status_code == 429:
-                         writeLog(f"got 429 - pause for rate limiting","error")
-                         time.sleep(60)
-                         r = requests.get(query, stream = True)
+          if fullsubscrape:
+               while len(data.get("data")) > 0:
+                    timeSentinel = str(allPosts[-1].get("created_utc"))
+                    query = "https://api.pushshift.io/reddit/search/submission/?subreddit="+subname+"&sort=desc&sort_type=created_utc&before="+timeSentinel+"&size=100"
+                    m="requesting "+query
+                    writeLog(message=m, type="INFO")
+                    r = requests.get(query, stream = True)
+                    if r.status_code == 200:
                          data = r.json()
                          allPosts += data.get("data")
-               else:
-                    m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
-                    writeLog(message=m,type="ERROR")
-                    continue
-               writeLog("len of data was "+str(len(data.get("data"))),"info")
-               writeLog("len of allPosts was "+str(len(allPosts)),"info")
+                    elif r.status_code == 429:
+                         while r.status_code == 429:
+                              writeLog(f"got 429 - pause for rate limiting","error")
+                              time.sleep(60)
+                              r = requests.get(query, stream = True)
+                              if r.status_code == 200:
+                                   data = r.json()
+                                   allPosts += data.get("data")
+                    else:
+                         m="query for "+subname+" couldn't be processed... CODE"+str(r.status_code)
+                         writeLog(message=m,type="ERROR")
+                         continue
+                    writeLog("len of data was "+str(len(data.get("data"))),"info")
+                    writeLog("len of allPosts was "+str(len(allPosts)),"info")
+          else:
+               writeLog(f"only getting first 100 from {subname} because fullsubscrape us {fullsubscrape}","info")
           #setup path to write files to
           subpath = rootPath+subname+"/reddit/"
           m="writing this subreddit content to - "+subpath
@@ -457,73 +471,78 @@ if not subredSkip:
           #try to get all submissions from a user
           subcount = 0
           for submission in allPosts:
-               captured+=1
-               subcount+= 1
-               url = submission["url"]
-               #convert imgur.com links into i.imgur.com links
-               if submission["domain"] == "imgur.com":
-                    modURL = url
-                    modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
-                    m="changed <"+url+"> to <"+modURL+">"
-                    writeLog(message=m,type="INFO")
-                    m= "getting [",subname,"] "+submission["title"]+" "+modURL
-                    writeLog(message=m,type="INFO")
-                    getSubredditImage(modURL)
-                    continue
-
-               #parse gifv and kick off  gifv grabbing
-               if url.split(".")[-1] == "gifv":
-                    #print("got a gifv")
-                    getSubredditGIFV(filename=url)
-                    continue
-               
-               #download items from video domains using youtube-dl
-               if submission["domain"] in videoDomains:
-                    m="getting ["+subname+"] "+submission["title"]+" "+url
-                    writeLog(message=m,type="INFO")
-                    filename = url.split("/")[-1]
-                    filename = filename.replace("?","")
-                    filename =  subpath+str(subcount)+"-"+subname+"-"+submission["author"]+"-"+filename if prependCount else subpath+subname+"-"+submission["author"]+"-"+filename
-                    if  os.path.exists(filename):
-                         m="File already exists -"+filename
-                         writeLog(message=m,type="WARNING")
+               try:
+                    captured+=1
+                    subcount+= 1
+                    url = submission["url"]
+                    #convert imgur.com links into i.imgur.com links
+                    if submission["domain"] == "imgur.com":
+                         modURL = url
+                         modURL = "i.imgur.com/a/"+modURL.split("/")[-1]
+                         m="changed <"+url+"> to <"+modURL+">"
+                         writeLog(message=m,type="INFO")
+                         m= "getting [",subname,"] "+submission["title"]+" "+modURL
+                         writeLog(message=m,type="INFO")
+                         getSubredditImage(modURL)
                          continue
-                    ydl_opts = {
-                         'format':'best',
-                         'outtmpl': filename,
-                         'cachedir': False,
-                         'force_generic_extractor': (submission["domain"] in videoDomains or submission["domain"] in gifDomains),
-                         'quiet':(loggingLevel <= 2),
-                         'no_warnings': (loggingLevel < 2)
-                    }
-                    print(bcolors.OKBLUE,end="")
-                    try:
-                         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                              ydl.download([url])
-                    except Exception as err:
-                         writeLog(message="failed to download video - "+url+" "+submission["domain"]+"\n{0}".format(err),type="ERROR")
-                    print(bcolors.ENDC,end="")
-                    continue
 
-               if "gallery" in url and submission["domain"] == "reddit.com":
-                    getSubredditGallery(submission["id"])
-                    continue
+                    #parse gifv and kick off  gifv grabbing
+                    if url.split(".")[-1] == "gifv":
+                         #print("got a gifv")
+                         getSubredditGIFV(filename=url)
+                         continue
+                    
+                    #download items from video domains using youtube-dl
+                    if submission["domain"] in videoDomains:
+                         m="getting ["+subname+"] "+submission["title"]+" "+url
+                         writeLog(message=m,type="INFO")
+                         filename = url.split("/")[-1]
+                         filename = filename.replace("?","").replace("\\","").replace("/","").replace("#","").replace("%","").replace("&","").replace("<","").replace(">","").replace("*","").replace("$","").replace("!","").replace("'","").replace("\"","").replace(":","").replace(";","").replace("+","").replace("`","").replace("|","").replace("=","")
+                         filename =  subpath+str(subcount)+"-"+subname+"-"+submission["author"]+"-"+filename if prependCount else subpath+subname+"-"+submission["author"]+"-"+filename
+                         if  os.path.exists(filename):
+                              m="File already exists -"+filename
+                              writeLog(message=m,type="WARNING")
+                              continue
+                         ydl_opts = {
+                              'format':'best',
+                              'outtmpl': filename,
+                              'cachedir': False,
+                              'force_generic_extractor': (submission["domain"] in videoDomains or submission["domain"] in gifDomains),
+                              'quiet':(loggingLevel <= 2),
+                              'no_warnings': (loggingLevel < 2)
+                         }
+                         print(bcolors.OKBLUE,end="")
+                         try:
+                              with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                   ydl.download([url])
+                         except Exception as err:
+                              writeLog(message="failed to download video - "+url+" "+submission["domain"]+"\n{0}".format(err),type="ERROR")
+                         print(bcolors.ENDC,end="")
+                         continue
 
-               #standard image grab
-               if(not submission["is_self"] and submission["domain"] in imageDomains):
-                    m="getting ["+subname+"] "+submission["title"]+" "+url
-                    writeLog(message=m,type="INFO")
-                    getSubredditImage(url)
-               #gif grab
-               elif(not submission["is_self"] and submission["domain"] in gifDomains):
-                    m="getting ["+subname+"] "+submission["title"]+" "+submission["url"]+" "+submission["domain"]
-                    writeLog(message=m,type="INFO")
-                    getSubredditGIF(filename=url)
-               #case to catch all other items
-               else:
-                    m = "NOT IMAGE - "+submission["title"]+" "+url+" "+submission["domain"]
-                    writeLog(message=m,type="WARNIN G")
-                    continue
+                    if "gallery" in url and submission["domain"] == "reddit.com":
+                         getSubredditGallery(submission["id"])
+                         continue
+
+                    #standard image grab
+                    if(not submission["is_self"] and submission["domain"] in imageDomains):
+                         m="getting ["+subname+"] "+submission["title"]+" "+url
+                         writeLog(message=m,type="INFO")
+                         getSubredditImage(url)
+                    #gif grab
+                    elif(not submission["is_self"] and submission["domain"] in gifDomains):
+                         m="getting ["+subname+"] "+submission["title"]+" "+submission["url"]+" "+submission["domain"]
+                         writeLog(message=m,type="INFO")
+                         getSubredditGIF(filename=url)
+                    #case to catch all other items
+                    else:
+                         m = "NOT IMAGE - "+submission["title"]+" "+url+" "+submission["domain"]
+                         writeLog(message=m,type="WARNIN G")
+                         continue
+               except Exception as e:
+                    writeLog(f"failed to get submission see submission details below","error")
+                    writeLog(f"\n-----ERROR BEGIN-----\n{e}\n-----ERROR END-----\n","error")
+                    writeLog(f"\n-----SUBMISSION BEGIN-----\n{submission}\n-----SUBMISSION END-----\n","error")
 
 if not twitSkip:
      # Status() is the data model for a tweet
@@ -536,88 +555,98 @@ if not twitSkip:
      auth = tweepy.AppAuthHandler(twit_consKey, twit_consSec)
      twitter = tweepy.API(auth)
      for user in twitUserList:
-          twitUserpath = rootPath+user+"/twitter/"
-          m="writing this twitter user content to - "+twitUserpath
-          writeLog(message=m,type="INFO")
           try:
-               os.makedirs(os.path.dirname(twitUserpath), exist_ok=True)
-          except Exception as err:
-               m = "Failed to create directory: "+twitUserpath+"\n{0}".format(err)
-               writeLog(message=m,type="ERROR")
-               continue
-
-          #get all tweets
-          allTweets = []
-          try:
-               newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
-          except Exception as err:
-               writeLog(f"Failed to get Tweets for {user}"+"\n{0}".format(err),"ERROR")
-          allTweets.extend(newTweets)
-          count=0
-          while len(newTweets) > 0:
-               writeLog(f"[{(200*count)+200}]Getting next set of tweets...","INFO")
-               newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False,max_id=allTweets[-1].id - 1)
-               allTweets.extend(newTweets)
-               count+=1
-          tweetsSeen+=len(allTweets)
-          #parse all tweets for media links
-          mediaFiles = []
-          for tweet in allTweets:
-               tweetAsJSON = json.loads(tweet.json)
+               twitUserpath = rootPath+user+"/twitter/"
+               m="writing this twitter user content to - "+twitUserpath
+               writeLog(message=m,type="INFO")
                try:
-                    if len(tweetAsJSON["entities"]["media"]) > 0:
-                         for m in tweetAsJSON["entities"]["media"]:
-                              mediaFiles.append(m["media_url"])
+                    os.makedirs(os.path.dirname(twitUserpath), exist_ok=True)
                except Exception as err:
-                    twtID = tweetAsJSON["id"]
-                    twtLink = f"https://twitter.com/{user}/status/{twtID}"
-                    writeLog(f"Tweet (ID: {twtID} | Link: {twtLink}) didn't have a media entity key","WARNING")
-          
-          #download all media links
-          mediaCount =0
-          for mediaFile in mediaFiles:
-               mediaCount+=1
-               #build filename for local write
-               filename = mediaFile.split("/")[-1]
-               filename = filename.replace("?","")
-               filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+user+"-"+filename 
-               #check if file exists - do not overwrite if it does
-               if  os.path.exists(filename):
-                    m="File already exists -"+filename
-                    writeLog(message=m,type="WARNING")
+                    m = "Failed to create directory: "+twitUserpath+"\n{0}".format(err)
+                    writeLog(message=m,type="ERROR")
                     continue
+
+               #get all tweets
+               allTweets = []
                try:
-                    writeLog(f"\n[{user}] Attempting to download {mediaFile}","INFO")
-                    wget.download(mediaFile,out=filename)
-                    print() #try to fix weird same line issue with wget output
-                    captured+=1
+                    newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False)
                except Exception as err:
-                    writeLog(f"\nFailed to download {mediaFile} to {filename}\n{sys.exc_info()[0]}"+"\n{0}".format(err),"ERROR")
+                    writeLog(f"Failed to get Tweets for {user}"+"\n{0}".format(err),"ERROR")
+               allTweets.extend(newTweets)
+               count=0
+               while len(newTweets) > 0:
+                    writeLog(f"[{(200*count)+200}]Getting next set of tweets...","INFO")
+                    newTweets = twitter.user_timeline(screen_name = user,count=200,include_rts=False,max_id=allTweets[-1].id - 1)
+                    allTweets.extend(newTweets)
+                    count+=1
+               tweetsSeen+=len(allTweets)
+               #parse all tweets for media links
+               mediaFiles = []
+               for tweet in allTweets:
+                    tweetAsJSON = json.loads(tweet.json)
+                    try:
+                         if len(tweetAsJSON["entities"]["media"]) > 0:
+                              for m in tweetAsJSON["entities"]["media"]:
+                                   mediaFiles.append(m["media_url"])
+                    except Exception as err:
+                         twtID = tweetAsJSON["id"]
+                         twtLink = f"https://twitter.com/{user}/status/{twtID}"
+                         writeLog(f"Tweet (ID: {twtID} | Link: {twtLink}) didn't have a media entity key","WARNING")
+               
+               #download all media links
+               mediaCount =0
+               for mediaFile in mediaFiles:
+                    mediaCount+=1
+                    #build filename for local write
+                    filename = mediaFile.split("/")[-1]
+                    filename = filename.replace("?","").replace("\\","").replace("/","").replace("#","").replace("%","").replace("&","").replace("<","").replace(">","").replace("*","").replace("$","").replace("!","").replace("'","").replace("\"","").replace(":","").replace(";","").replace("+","").replace("`","").replace("|","").replace("=","")
+                    filename = twitUserpath+str(mediaCount)+"-"+user+"-"+filename if prependCount else twitUserpath+user+"-"+filename 
+                    #check if file exists - do not overwrite if it does
+                    if  os.path.exists(filename):
+                         m="File already exists -"+filename
+                         writeLog(message=m,type="WARNING")
+                         continue
+                    try:
+                         writeLog(f"\n[{user}] Attempting to download {mediaFile}","INFO")
+                         wget.download(mediaFile,out=filename)
+                         print() #try to fix weird same line issue with wget output
+                         captured+=1
+                    except Exception as err:
+                         writeLog(f"\nFailed to download {mediaFile} to {filename}\n{sys.exc_info()[0]}"+"\n{0}".format(err),"ERROR")
+          except Exception as e:
+               writeLog(f"failed getting user [{user}] scrape","error")
+               writeLog(f"\n-----ERROR BEGIN-----\n{e}\n-----ERROR END-----\n","error")
+               writeLog(f"\n-----PROFILE BEGIN-----\n{user}\n-----PROFILE END-----\n","error")
 
 
 if not instaSkip:
      #loop through all insta profiles to scrape content
      for profile in instaList:
-          userpath = rootPath+profile+"/instagram/"
-          m="writing this user content to - "+userpath
-          writeLog(message=m,type="INFO")
-          #create base path per username scraped
           try:
-               os.makedirs(os.path.dirname(userpath), exist_ok=True)
-          except Exception as err:
-               m = "Failed to create directory: "+userpath+"\n{0}".format(err)
-               writeLog(message=m,type="ERROR")
-               continue
-          mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
-          m="Attempting to download "+profile
-          writeLog(message=m,type="INFO")
-          try:
-               mod.download_profile(profile)
-          except Exception as err:
-               m="except Exception as errion thrown when processing "+profile+"\n{0}".format(err)
-               writeLog(message=m, type="ERROR")
-          writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
-          time.sleep(instaRetryBuffer)
+               userpath = rootPath+profile+"/instagram/"
+               m="writing this user content to - "+userpath
+               writeLog(message=m,type="INFO")
+               #create base path per username scraped
+               try:
+                    os.makedirs(os.path.dirname(userpath), exist_ok=True)
+               except Exception as err:
+                    m = "Failed to create directory: "+userpath+"\n{0}".format(err)
+                    writeLog(message=m,type="ERROR")
+                    continue
+               mod=instaloader.Instaloader(dirname_pattern=userpath,download_video_thumbnails=False)
+               m="Attempting to download "+profile
+               writeLog(message=m,type="INFO")
+               try:
+                    mod.download_profile(profile)
+               except Exception as err:
+                    m="Exception thrown when processing "+profile+"\n{0}".format(err)
+                    writeLog(message=m, type="ERROR")
+               writeLog(f"({str(instaRetryBuffer)}s) Waiting between Instagram accounts...","INFO")
+               time.sleep(instaRetryBuffer)
+          except Exception as e:
+               writeLog(f"failed getting user [{profile}] scrape","error")
+               writeLog(f"\n-----ERROR BEGIN-----\n{e}\n-----ERROR END-----\n","error")
+               writeLog(f"\n-----PROFILE BEGIN-----\n{profile}\n-----PROFILE END-----\n","error")
 
 m=("\033[1;32;40mDownloaded: "+str(captured)+"\nRedditors: "+str(len(userList))+"\nSubreddits: "+str(len(subList))+"\nInsta Accounts: "+str(len(instaAccounts))+"\nTwitter Accounts: "+str(len(twitUserList))+"\nTweets seen: "+str(tweetsSeen)+"\nDuration: "+str(datetime.timedelta(seconds=math.floor((datetime.datetime.now() - startTime).total_seconds()))))
 if loggingLevel >=2:

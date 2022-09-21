@@ -13,6 +13,7 @@
      "loggingLevel":1,
      "prependCount":false,
      "instaRetryBuffer":900,
+     "fullsubscrape":true,
      "imageDomains": [
           "i.redd.it",
           "i.imgur.com"
